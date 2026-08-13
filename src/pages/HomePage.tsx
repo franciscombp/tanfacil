@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { useGameStore } from '@/store/gameStore'
+import { usePlayerName } from '@/game/usePlayerName'
+import { story } from '@/game/story'
 import { APP_VERSION } from '@/lib/useAppVersion'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,8 +15,8 @@ import {
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const setPlayerDisplayName = useGameStore((s) => s.setPlayerDisplayName)
-  const [name, setName] = useState('')
+  const [savedName, setPlayerName] = usePlayerName()
+  const [name, setName] = useState(savedName)
   const [error, setError] = useState('')
 
   const handleStartGame = (e: React.FormEvent) => {
@@ -24,7 +25,7 @@ export default function HomePage() {
       setError('Ingresa tu nombre')
       return
     }
-    setPlayerDisplayName(name.trim())
+    setPlayerName(name.trim())
     navigate('/game')
   }
 
@@ -37,10 +38,8 @@ export default function HomePage() {
       <Card className="relative w-full max-w-sm animate-fade-up">
         <CardHeader className="text-center">
           <div className="mb-2 text-5xl leading-none">🕐</div>
-          <CardTitle className="text-2xl">No es tan fácil</CardTitle>
-          <CardDescription>
-            Una historia interactiva que se decide entre todos
-          </CardDescription>
+          <CardTitle className="text-2xl">{story.title}</CardTitle>
+          <CardDescription>{story.premise}</CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -72,8 +71,7 @@ export default function HomePage() {
           </form>
 
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Todos los jugadores comparten la misma sala: la escena avanza cuando
-            todos han votado.
+            Debatan cada decisión y voten: la historia avanza con el grupo.
           </p>
           <p
             className="mt-3 text-center font-mono text-[10px] text-muted-foreground/70"

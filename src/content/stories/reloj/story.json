@@ -7,7 +7,11 @@
     "purpose": "distractor",
     "measure": "realElapsedTime"
   },
-  "voteSeconds": 60,
+  "timers": {
+    "voteSeconds": 60,
+    "revealSeconds": 6,
+    "allVotedGraceSeconds": 5
+  },
   "rules": "La hora límite es un distractor narrativo: no hay tiempo límite ni penalizaciones por llegar a las 12:00, y el jefe nunca llega a entrar. El sistema sólo registra cuánto tarda el equipo en pasar de la intervención inmediata a una solución informada. Ningún dato resuelve el problema por sí solo: la solución aparece cuando varias evidencias tienen sentido juntas. No hay finales malos, hay desvíos: el juego muestra la consecuencia y devuelve al equipo a un checkpoint con lo aprendido. Para editar: 'next' apunta al id de otra escena, 'draw' saca una carta del tablero y 'detour' marca una escena como consecuencia.",
   "board": [
     {

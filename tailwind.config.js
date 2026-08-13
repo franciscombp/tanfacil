@@ -52,7 +52,7 @@ export default {
         // Cortinilla entre escenas: cubre y se retira.
         curtain: {
           '0%': { opacity: '1' },
-          '55%': { opacity: '1' },
+          '60%': { opacity: '1' },
           '100%': { opacity: '0' },
         },
         'pulse-soft': {
@@ -62,7 +62,7 @@ export default {
       },
       animation: {
         'fade-up': 'fade-up 0.35s ease-out',
-        curtain: 'curtain 0.7s ease-in-out forwards',
+        curtain: 'curtain 0.9s ease-in-out forwards',
         'pulse-soft': 'pulse-soft 1.4s ease-in-out infinite',
       },
     },

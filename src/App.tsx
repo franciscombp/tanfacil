@@ -3,11 +3,11 @@ import { useEffect } from 'react'
 import HomePage from '@/pages/HomePage'
 import GamePage from '@/pages/GamePage'
 import AdminPage from '@/pages/AdminPage'
-import AdminGamePage from '@/pages/AdminGamePage'
 import { useAppVersion } from '@/lib/useAppVersion'
 
 const basePath = import.meta.env.DEV ? '/' : '/tanfacil/'
 
+/** Procesa el parámetro `route` que deja el 404.html de GitHub Pages. */
 function RouteNavigator() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -33,7 +33,6 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/game" element={<GamePage />} />
         <Route path="/admin" element={<AdminPage />} />
-        <Route path="/admin/:sessionCode" element={<AdminGamePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
