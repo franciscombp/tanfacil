@@ -1,172 +1,120 @@
 import { Scene } from '@/types/game'
 
 export const STORY_SCENES: Record<string, Scene> = {
-  // === NODO 001: Encargo ===
+  // === ESCENA 001: El problema ===
   scene_001: {
     id: 'scene_001',
     type: 'vote',
-    image: '🕐 Reloj tapado por viga',
-    text: 'El jefe pidió arreglar el reloj antes de las 12:00.',
+    image: '🕐 Reloj roto',
+    text: 'Alguien pegó el reloj roto con cinta adhesiva. El jefe lo vio y está furioso. ¿Qué hacemos?',
     options: [
-      { id: 'solve_now', label: 'Solucionarlo', nextScene: 'scene_002' },
-      { id: 'think', label: 'Déjame pensarlo', nextScene: 'scene_003' },
+      { id: 'investigate', label: 'Investigar primero', nextScene: 'scene_002' },
+      { id: 'quick_fix', label: 'Repararlo rápido', nextScene: 'scene_003' },
+      { id: 'replace', label: 'Reemplazarlo', nextScene: 'scene_005' },
     ],
   },
 
-  // === NODO 002: Solución absurda ===
+  // === ESCENA 002: Investigación ===
   scene_002: {
     id: 'scene_002',
-    type: 'vote',
-    image: '🎨 Reloj medio pintado',
-    text: 'Alguien pintó la mitad del reloj que no se ve.',
+    type: 'investigation',
+    image: '🔍 Examinando la pared',
+    text: 'Investigan el reloj y la pared. Descubren cosas importantes.',
     options: [
-      { id: 'remove_beam', label: 'Quitar la viga', nextScene: 'scene_004' },
-      { id: 'move_clock', label: 'Mover el reloj', nextScene: 'scene_005' },
-      { id: 'erase_paint', label: 'Borrar la pintura', nextScene: 'scene_006' },
-      { id: 'investigate', label: 'Investigar primero', nextScene: 'scene_003' },
+      { id: 'clue1', label: 'Examinar el reloj', nextScene: 'scene_002_clue' },
+      { id: 'clue2', label: 'Revisar la pared', nextScene: 'scene_002_clue' },
+      { id: 'clue3', label: 'Preguntar al que lo pegó', nextScene: 'scene_002_clue' },
+      { id: 'decide', label: 'Ya tengo suficiente', nextScene: 'scene_decision' },
     ],
   },
 
-  // === NODO 003: Investigación ===
+  scene_002_clue: {
+    id: 'scene_002_clue',
+    type: 'investigation',
+    image: '💡 Nueva información',
+    text: 'Descubren una pista sobre qué pasó con el reloj.',
+    options: [
+      { id: 'investigate_more', label: 'Investigar más', nextScene: 'scene_002' },
+      { id: 'decide', label: 'Tomar una decisión', nextScene: 'scene_decision' },
+    ],
+  },
+
+  // === ESCENA 003: Reparación rápida ===
   scene_003: {
     id: 'scene_003',
-    type: 'investigation',
-    image: '🔍 Reloj sin tocar',
-    text: 'Todavía no has tocado nada. ¿Qué quieres investigar?',
+    type: 'vote',
+    image: '🔧 Herramientas listas',
+    text: 'Intentas repararlo rápidamente, pero descubres que es más complejo de lo que parece.',
     options: [
-      { id: 'look_clock', label: 'Mirar el reloj de cerca', nextScene: 'scene_003_clue' },
-      { id: 'check_wall', label: 'Revisar la pared', nextScene: 'scene_003_clue' },
-      { id: 'ask_history', label: 'Preguntar qué había antes', nextScene: 'scene_003_clue' },
-      { id: 'act', label: 'Actuar de todas formas', nextScene: 'scene_002' },
+      { id: 'investigate', label: 'Investigar primero', nextScene: 'scene_002' },
+      { id: 'full_repair', label: 'Reparación completa', nextScene: 'scene_004' },
+      { id: 'replace', label: 'Mejor reemplazarlo', nextScene: 'scene_005' },
     ],
   },
 
-  scene_003_clue: {
-    id: 'scene_003_clue',
-    type: 'reveal',
-    image: '💡 Pista descubierta',
-    text: 'Has descubierto una pista. Vuelve a investigar o actúa.',
-    options: [
-      { id: 'investigate_more', label: 'Investigar otra cosa', nextScene: 'scene_003' },
-      { id: 'act_now', label: 'Actuar con lo que sé', nextScene: 'scene_002' },
-    ],
-  },
-
-  // === NODO 004: Quitar la viga ===
+  // === ESCENA 004: Reparación completa ===
   scene_004: {
     id: 'scene_004',
-    type: 'reveal',
-    image: '⚠️ Techo inestable',
-    text: 'La viga sostiene parte del falso techo. Al quitarla, el techo se derrumba.',
+    type: 'vote',
+    image: '⚙️ Piezas dentro',
+    text: 'Al abrir el reloj, ves que necesita mantenimiento. Las piezas están oxidadas y los cables rotos.',
     options: [
-      { id: 'return_004', label: 'Volver al checkpoint', nextScene: 'checkpoint_return_002' },
-      { id: 'continue_004', label: 'Seguir adelante', nextScene: 'scene_007' },
+      { id: 'restore', label: 'Restaurarlo completamente', nextScene: 'scene_repair_path' },
+      { id: 'conserve', label: 'Mantenerlo como está, dejarlo en la pared como recuerdo', nextScene: 'scene_conserve_path' },
+      { id: 'replace', label: 'Reemplazarlo', nextScene: 'scene_modern_path' },
     ],
   },
 
-  // === NODO 005: Mover el reloj ===
+  // === ESCENA 005: Reemplazo ===
   scene_005: {
     id: 'scene_005',
-    type: 'reveal',
-    image: '🕳️ Agujero revelado',
-    text: 'Al mover el reloj, aparece un agujero en la pared.',
-    options: [
-      { id: 'repair', label: 'Reparar el agujero', nextScene: 'scene_007' },
-      { id: 'return_005', label: 'Volver al checkpoint', nextScene: 'checkpoint_return_002' },
-    ],
-  },
-
-  // === NODO 006: Borrar la pintura ===
-  scene_006: {
-    id: 'scene_006',
-    type: 'reveal',
-    image: '🖌️ Parches de pared',
-    text: 'Debajo de la pintura hay capas de parches antiguos.',
-    options: [
-      { id: 'continue_006', label: 'Seguir investigando', nextScene: 'scene_003' },
-      { id: 'return_006', label: 'Volver', nextScene: 'checkpoint_return_002' },
-    ],
-  },
-
-  // === NODO 007: Comprender la situación ===
-  scene_007: {
-    id: 'scene_007',
     type: 'vote',
-    image: '🤔 Pieza del puzle',
-    text: 'Empiezas a entender: el reloj está detenido y tapa un agujero.',
+    image: '📱 Digital alternatives',
+    text: '¿Con qué lo reemplazamos? El viejo reloj fue una buena opción en su momento, pero ahora hay alternativas.',
     options: [
-      { id: 'change_battery', label: 'Cambiar la pila', nextScene: 'scene_boss_arrives' },
-      { id: 'investigate_more_007', label: 'Investigar más sobre el reloj', nextScene: 'scene_003' },
-      { id: 'learn_about_hole', label: 'Aprender sobre el agujero', nextScene: 'scene_003' },
-      { id: 'learn_history', label: 'Aprender la historia del reloj', nextScene: 'scene_003' },
+      { id: 'new_clock', label: 'Comprar un nuevo reloj moderno', nextScene: 'scene_modern_path' },
+      { id: 'digital', label: 'Usar una pantalla digital', nextScene: 'scene_modern_path' },
+      { id: 'keep', label: 'Mantener este, es icónico', nextScene: 'scene_decision' },
     ],
   },
 
-  // === BOSS ARRIVES ===
-  scene_boss_arrives: {
-    id: 'scene_boss_arrives',
-    type: 'reveal',
-    image: '😰 Jefe furioso',
-    text: 'El reloj funciona ahora, pero el jefe llega y ve el desastre.',
+  // === ESCENA DECISIÓN: Punto de inflexión ===
+  scene_decision: {
+    id: 'scene_decision',
+    type: 'vote',
+    image: '🤔 Decisión final',
+    text: 'Han llegado al punto de decisión. ¿Qué hacen con el reloj pegado con cinta?',
     options: [
-      { id: 'return_boss', label: 'Volver al checkpoint', nextScene: 'checkpoint_return_002' },
-      { id: 'continue_boss', label: 'Enfrentar las consecuencias', nextScene: 'scene_008' },
+      { id: 'repair', label: 'Repararlo correctamente', nextScene: 'scene_repair_path' },
+      { id: 'conserve', label: 'Conservarlo como está', nextScene: 'scene_conserve_path' },
+      { id: 'modern', label: 'Solución moderna', nextScene: 'scene_modern_path' },
     ],
   },
 
-  scene_008: {
-    id: 'scene_008',
-    type: 'reveal',
-    image: '💼 Jefe decepcionado',
-    text: 'El jefe ve el techo dañado, el agujero, la pintura... No fue la solución.',
-    options: [
-      { id: 'restart', label: 'Volver al inicio', nextScene: 'scene_001' },
-    ],
-  },
-
-  // === FINALES BUENOS ===
-
-  // Final 1: Reparar todo sin reloj
-  scene_final_repair: {
-    id: 'scene_final_repair',
+  // === FINAL 1: REPARACIÓN ===
+  scene_repair_path: {
+    id: 'scene_repair_path',
     type: 'ending',
-    image: '✨ Pared reparada',
-    text: '✓ Reparaste la pared, removiste el reloj innecesario y todo está perfecto.',
-    options: [
-      { id: 'play_again', label: 'Volver a jugar', nextScene: 'scene_001' },
-    ],
+    image: '✅ Reloj funcionando',
+    text: 'Después de horas de trabajo, lograron restaurar el reloj. Ahora funciona perfectamente, como si fuera nuevo. El jefe está satisfecho. La cinta adhesiva se quedará en la historia, pero el reloj vuelve a marcar el tiempo correctamente.',
+    options: [],
   },
 
-  // Final 2: Conservar el reloj
-  scene_final_conserve: {
-    id: 'scene_final_conserve',
+  // === FINAL 2: CONSERVACIÓN ===
+  scene_conserve_path: {
+    id: 'scene_conserve_path',
     type: 'ending',
-    image: '📦 Reloj guardado',
-    text: '✓ Guardaste el reloj como recuerdo. La pared está reparada y funcional.',
-    options: [
-      { id: 'play_again_2', label: 'Volver a jugar', nextScene: 'scene_001' },
-    ],
+    image: '🎨 Reloj pegado con cinta',
+    text: 'Decidieron dejar el reloj pegado con cinta. Lo marcaron como "En uso" con una placa que dice "Hotfix en producción". Se convirtió en un símbolo de la oficina: un recordatorio de que a veces los problemas temporales se quedan más tiempo del previsto, y eso está bien.',
+    options: [],
   },
 
-  // Final 3: Solución moderna (Teams)
-  scene_final_modern: {
-    id: 'scene_final_modern',
+  // === FINAL 3: MODERNIZACIÓN ===
+  scene_modern_path: {
+    id: 'scene_modern_path',
     type: 'ending',
-    image: '💻 Teams en la pantalla',
-    text: '✓ Teams ya cubre todas las funciones. No necesitas un reloj antiguo.',
-    options: [
-      { id: 'play_again_3', label: 'Volver a jugar', nextScene: 'scene_001' },
-    ],
-  },
-
-  // Checkpoint returns
-  checkpoint_return_002: {
-    id: 'checkpoint_return_002',
-    type: 'reveal',
-    image: '⏮️ Volviendo...',
-    text: 'Volviste al checkpoint. Intenta algo diferente.',
-    options: [
-      { id: 'continue_from_checkpoint', label: 'Continuar', nextScene: 'scene_002' },
-    ],
+    image: '📊 Teams Calendar',
+    text: 'En lugar de gastar recursos arreglando un reloj antiguo, sugieren cambiar completamente. Instalan un sistema digital que muestra la hora en todas las pantallas de la oficina, integrado con Teams. El viejo reloj pegado con cinta se retira y se guarda como pieza de museo. Es un nuevo comienzo.',
+    options: [],
   },
 }
