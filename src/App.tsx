@@ -4,6 +4,7 @@ import HomePage from '@/pages/HomePage'
 import GamePage from '@/pages/GamePage'
 import AdminPage from '@/pages/AdminPage'
 import AdminGamePage from '@/pages/AdminGamePage'
+import { useAppVersion } from '@/lib/useAppVersion'
 
 const basePath = import.meta.env.DEV ? '/' : '/tanfacil/'
 
@@ -22,6 +23,9 @@ function RouteNavigator() {
 }
 
 export default function App() {
+  // Si hay una compilación nueva publicada, la app se recarga sola.
+  useAppVersion()
+
   return (
     <BrowserRouter basename={basePath}>
       <RouteNavigator />

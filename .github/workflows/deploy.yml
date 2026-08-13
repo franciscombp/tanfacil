@@ -4,26 +4,30 @@ on:
   push:
     branches: [ main ]
 
+# Sin esto el push del bot falla con 403 y el despliegue no llega nunca.
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-pages
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [20.x]
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js ${{ matrix.node-version }}
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: 20.x
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm install
+      run: npm ci || npm install
 
     - name: Build project
       run: npm run build
@@ -32,12 +36,16 @@ jobs:
         VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         VITE_ADMIN_TOKEN: ${{ secrets.TAN_FACIL }}
 
-    - name: Commit and push if there are changes
+    - name: Commit build if it changed
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        if ! git diff-index --quiet HEAD --; then
-          git add docs/
-          git commit -m "Build: Update production build in docs folder"
-          git push
+        git add -A docs/
+        if git diff --cached --quiet; then
+          echo "El build no cambió: nada que publicar."
+        else
+          git commit -m "Build: actualizar docs/ [skip ci]"
+          # La rama puede haber avanzado mientras compilaba.
+          git pull --rebase origin main
+          git push origin HEAD:main
         fi

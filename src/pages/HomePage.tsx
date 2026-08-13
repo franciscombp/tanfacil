@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { useGameStore } from '@/store/gameStore'
+import { APP_VERSION } from '@/lib/useAppVersion'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -73,6 +74,12 @@ export default function HomePage() {
           <p className="mt-4 text-center text-xs text-muted-foreground">
             Todos los jugadores comparten la misma sala: la escena avanza cuando
             todos han votado.
+          </p>
+          <p
+            className="mt-3 text-center font-mono text-[10px] text-muted-foreground/70"
+            title="Versión de la compilación en uso"
+          >
+            v{APP_VERSION}
           </p>
         </CardContent>
       </Card>
