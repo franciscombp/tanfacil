@@ -3,17 +3,17 @@
   <head>
     <meta charset="utf-8">
     <title>No es tan fácil</title>
-    <script type="text/javascript">
-      var segmentCount = 0;
-      var l = window.location;
-      l.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        '/tanfacil/?p=/' + l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
-        (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-        l.hash
-      );
-    </script>
   </head>
   <body>
+    <script>
+      var pathSegments = window.location.pathname.split('/').filter(Boolean);
+      var lastSegment = pathSegments[pathSegments.length - 1];
+
+      if (lastSegment && lastSegment !== 'tanfacil') {
+        window.location.replace('/tanfacil/?route=' + lastSegment);
+      } else {
+        window.location.replace('/tanfacil/');
+      }
+    </script>
   </body>
 </html>

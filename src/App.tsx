@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import HomePage from '@/pages/HomePage'
 import GamePage from '@/pages/GamePage'
@@ -7,18 +7,16 @@ import AdminGamePage from '@/pages/AdminGamePage'
 
 const basePath = import.meta.env.DEV ? '/' : '/tanfacil/'
 
-function RedirectHandler() {
-  const location = useLocation()
+function RouteNavigator() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search)
-    const pathParam = params.get('p')
-
-    if (pathParam) {
-      window.history.replaceState(null, '', '/tanfacil' + pathParam)
-      window.location.reload()
+    const route = searchParams.get('route')
+    if (route) {
+      navigate('/' + route, { replace: true })
     }
-  }, [location])
+  }, [searchParams, navigate])
 
   return null
 }
@@ -26,7 +24,7 @@ function RedirectHandler() {
 export default function App() {
   return (
     <BrowserRouter basename={basePath}>
-      <RedirectHandler />
+      <RouteNavigator />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/game" element={<GamePage />} />
