@@ -47,7 +47,8 @@ const initialState = {
   session: null,
   sessionCode: '',
   playerId: null,
-  playerDisplayName: '',
+  // Se recuerda en la pestaña: una recarga no debe echarte de la partida.
+  playerDisplayName: sessionStorage.getItem('tanfacil_name') ?? '',
   players: [],
   currentVote: null,
   playerVoted: false,
@@ -64,7 +65,10 @@ export const useGameStore = create<GameStore>((set) => ({
   setSession: (session) => set({ session }),
   setSessionCode: (code) => set({ sessionCode: code }),
   setPlayerId: (id) => set({ playerId: id }),
-  setPlayerDisplayName: (name) => set({ playerDisplayName: name }),
+  setPlayerDisplayName: (name) => {
+    sessionStorage.setItem('tanfacil_name', name)
+    set({ playerDisplayName: name })
+  },
   setPlayers: (players) => set({ players }),
   setCurrentVote: (vote) => set({ currentVote: vote }),
   setPlayerVoted: (voted) => set({ playerVoted: voted }),

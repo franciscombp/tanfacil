@@ -18,6 +18,28 @@ const RELOADED_KEY = 'tanfacil_reloaded_for'
 export const APP_VERSION: string =
   typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev'
 
+/**
+ * Mientras hay una partida en curso no se recarga: interrumpir una votación
+ * para actualizar parece una caída de conexión. La actualización queda
+ * pendiente y se aplica al salir de la partida.
+ */
+let updatesPaused = false
+let pendingVersion: string | null = null
+
+export function pauseUpdates(paused: boolean): void {
+  updatesPaused = paused
+  if (!paused && pendingVersion) applyUpdate(pendingVersion)
+}
+
+function applyUpdate(version: string): void {
+  if (sessionStorage.getItem(RELOADED_KEY) === version) return
+  sessionStorage.setItem(RELOADED_KEY, version)
+
+  const url = new URL(window.location.href)
+  url.searchParams.set('v', version.replace(/[^\w.-]+/g, '_'))
+  window.location.replace(url.toString())
+}
+
 async function fetchPublishedVersion(): Promise<string | null> {
   try {
     const response = await fetch(
@@ -44,13 +66,11 @@ export function useAppVersion(): { running: string; published: string | null } {
       setPublished(latest)
       if (latest === APP_VERSION) return
 
-      // Ya se intentó recargar para esta versión: no insistir en bucle.
-      if (sessionStorage.getItem(RELOADED_KEY) === latest) return
-      sessionStorage.setItem(RELOADED_KEY, latest)
-
-      const url = new URL(window.location.href)
-      url.searchParams.set('v', latest.replace(/[^\w.-]+/g, '_'))
-      window.location.replace(url.toString())
+      if (updatesPaused) {
+        pendingVersion = latest
+        return
+      }
+      applyUpdate(latest)
     }
 
     void check()

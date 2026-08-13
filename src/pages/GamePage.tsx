@@ -4,6 +4,7 @@ import { Check, Clock3, Crown, Hourglass, LogOut, Wifi, WifiOff } from 'lucide-r
 
 import { useGameStore } from '@/store/gameStore'
 import { useGameRoom } from '@/lib/gameRoom'
+import { pauseUpdates } from '@/lib/useAppVersion'
 import { BOARD_SLOTS, CHECKPOINTS } from '@/data/storyData'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,6 +31,12 @@ export default function GamePage() {
   useEffect(() => {
     if (!playerDisplayName) navigate('/', { replace: true })
   }, [playerDisplayName, navigate])
+
+  // No recargar por actualización mientras se está jugando.
+  useEffect(() => {
+    pauseUpdates(true)
+    return () => pauseUpdates(false)
+  }, [])
 
   const {
     scene,
@@ -117,7 +124,7 @@ export default function GamePage() {
               {status === 'connected'
                 ? 'En vivo'
                 : status === 'connecting'
-                  ? 'Conectando…'
+                  ? 'Reconectando…'
                   : 'Sin conexión'}
             </span>
           </span>

@@ -189,6 +189,9 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
   const pid = useMemo(() => getPersistentId(role), [role])
   const joinedAt = useMemo(() => getJoinedAt(role), [role])
 
+  /** Sube en cada reintento de conexión y fuerza recrear el canal. */
+  const [retry, setRetry] = useState(0)
+
   const channelRef = useRef<RealtimeChannel | null>(null)
   const subscribedRef = useRef(false)
   const adoptedRef = useRef(false)
@@ -218,9 +221,21 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
   useEffect(() => {
     if (!isSupabaseConfigured) return
 
+    // Sólo se declara "sin conexión" si el corte dura; los cierres breves
+    // (pestaña en segundo plano, cambio de red) se muestran como reconexión.
     const timeout = setTimeout(() => {
       if (!subscribedRef.current) setStatus('offline')
     }, CONNECT_TIMEOUT_MS)
+
+    // Espera creciente entre reintentos, hasta 30 s.
+    const backoff = Math.min(30_000, 2000 * 2 ** Math.min(retry, 4))
+    let rejoin: ReturnType<typeof setTimeout> | undefined
+
+    const scheduleRejoin = (reason: string) => {
+      if (rejoin) return
+      console.info(`[sala] ${reason}: reintentando en ${backoff / 1000}s`)
+      rejoin = setTimeout(() => setRetry((r) => r + 1), backoff)
+    }
 
     const channel = supabase.channel(ROOM, {
       config: { presence: { key: pid } },
@@ -258,24 +273,42 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
         if (subscription === 'SUBSCRIBED') {
           subscribedRef.current = true
           setStatus('connected')
+          setRetry(0)
           track()
-        } else if (
+          return
+        }
+
+        if (
           subscription === 'CHANNEL_ERROR' ||
           subscription === 'TIMED_OUT' ||
           subscription === 'CLOSED'
         ) {
           subscribedRef.current = false
-          setStatus('offline')
+          // Un corte no es "sin conexión" todavía: se intenta volver a entrar.
+          setStatus((current) => (current === 'offline' ? current : 'connecting'))
+          scheduleRejoin(subscription)
         }
       })
 
+    // Al volver a la pestaña, reconectar sin esperar al backoff.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && !subscribedRef.current) {
+        setRetry((r) => r + 1)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onVisible)
+
     return () => {
       clearTimeout(timeout)
+      if (rejoin) clearTimeout(rejoin)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onVisible)
       subscribedRef.current = false
       channelRef.current = null
       void supabase.removeChannel(channel)
     }
-  }, [pid, track])
+  }, [pid, track, retry])
 
   useEffect(() => {
     track()
