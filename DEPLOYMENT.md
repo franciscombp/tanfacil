@@ -56,12 +56,12 @@ Before the deployment workflow can function, you need to set up repository secre
 
 ### Step 3: Enable GitHub Pages
 
-1. Go to your repository settings
+1. Go to your repository settings: https://github.com/franciscombp/tanfacil/settings/pages
 2. Click **Pages** (left sidebar)
 3. Under "Build and deployment":
    - **Source**: Select "Deploy from a branch"
-   - **Branch**: Select `gh-pages` branch (created automatically by the workflow)
-   - **Folder**: Select `/ (root)`
+   - **Branch**: Select `main` branch
+   - **Folder**: Select `/docs`
 4. Click **Save**
 
 ## Triggering Deployment
@@ -70,26 +70,25 @@ Before the deployment workflow can function, you need to set up repository secre
 Simply push to the `main` branch:
 
 ```bash
-git checkout main
+git add .
+git commit -m "Your message"
 git push origin main
 ```
 
 The GitHub Actions workflow will automatically:
 1. Build the project with environment variables
-2. Generate production assets in `dist/`
-3. Deploy to GitHub Pages on the `gh-pages` branch
+2. Generate production assets in `docs/` folder
+3. Commit built files to `main` branch
+4. GitHub Pages automatically serves from `/docs`
 
-### Manual Deployment (Local)
-
-If you have `gh-pages` CLI installed locally:
+### Local Build (Optional)
+To build locally without deployment:
 
 ```bash
-npm run deploy
+npm run build
 ```
 
-This command:
-1. Builds the project with `npm run build`
-2. Deploys the `dist/` folder to GitHub Pages using `gh-pages`
+This creates production files in the `docs/` folder ready for GitHub Pages.
 
 ## Monitoring Deployment
 
@@ -117,6 +116,14 @@ This command:
 - Clear browser cache (Ctrl+Shift+Del or Cmd+Shift+Del)
 - Check that Supabase credentials in secrets are correct
 - Verify the `base` in `vite.config.ts` is `/tanfacil/`
+- Ensure GitHub Pages is configured to serve from `/docs` folder in `main` branch
+
+#### Issue: "GitHub Actions workflow failed"
+**Solution**:
+- Check the workflow logs for the specific error
+- Ensure all 3 secrets are set in repository
+- Verify branch is `main`
+- Check if `.nojekyll` file exists in docs folder
 
 ## Application Access
 

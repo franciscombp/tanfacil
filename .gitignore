@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+# GitHub Pages is served from /docs, keep it in repo
+# dist/ is ignored, we use /docs instead
 
 # Environment variables
 .env
