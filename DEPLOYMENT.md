@@ -1,0 +1,203 @@
+# GitHub Pages Deployment Guide
+
+This document outlines the steps to deploy "No es tan fácil" to GitHub Pages.
+
+## Overview
+
+The application is configured for automatic deployment to GitHub Pages via GitHub Actions. When you push to the `main` branch, the following happens automatically:
+
+1. GitHub Actions runs the build process
+2. TypeScript is compiled
+3. React application is built with Vite
+4. Built files are deployed to GitHub Pages
+
+## Current Deployment Status
+
+- **Repository**: https://github.com/franciscombp/tanfacil
+- **GitHub Pages URL**: https://franciscombp.github.io/tanfacil/
+- **Branch**: `main`
+- **Workflow**: `.github/workflows/deploy.yml`
+
+## Prerequisites
+
+Before the deployment workflow can function, you need to set up repository secrets in GitHub.
+
+### Step 1: Get Your Supabase Credentials
+
+1. Go to your Supabase project: https://supabase.com/dashboard
+2. Find these values:
+   - **VITE_SUPABASE_URL**: Settings → API → Project URL
+   - **VITE_SUPABASE_ANON_KEY**: Settings → API → anon public key
+
+3. Define your admin token:
+   - **VITE_ADMIN_TOKEN**: Any secret string you choose for admin authentication
+
+### Step 2: Add Repository Secrets to GitHub
+
+1. Go to your repository: https://github.com/franciscombp/tanfacil
+2. Click **Settings** (top navigation)
+3. Click **Secrets and variables** → **Actions** (left sidebar)
+4. Click **New repository secret** and add each of the following:
+
+#### Secret 1: VITE_SUPABASE_URL
+- **Name**: `VITE_SUPABASE_URL`
+- **Value**: `https://tlbovmiebqvukgvrcqyu.supabase.co` (or your project URL)
+- Click **Add secret**
+
+#### Secret 2: VITE_SUPABASE_ANON_KEY
+- **Name**: `VITE_SUPABASE_ANON_KEY`
+- **Value**: Your Supabase anon key
+- Click **Add secret**
+
+#### Secret 3: VITE_ADMIN_TOKEN
+- **Name**: `VITE_ADMIN_TOKEN`
+- **Value**: `ADMIN-SECRET-12345` (or your chosen admin token)
+- Click **Add secret**
+
+### Step 3: Enable GitHub Pages
+
+1. Go to your repository settings
+2. Click **Pages** (left sidebar)
+3. Under "Build and deployment":
+   - **Source**: Select "Deploy from a branch"
+   - **Branch**: Select `gh-pages` branch (created automatically by the workflow)
+   - **Folder**: Select `/ (root)`
+4. Click **Save**
+
+## Triggering Deployment
+
+### Automatic Deployment
+Simply push to the `main` branch:
+
+```bash
+git checkout main
+git push origin main
+```
+
+The GitHub Actions workflow will automatically:
+1. Build the project with environment variables
+2. Generate production assets in `dist/`
+3. Deploy to GitHub Pages on the `gh-pages` branch
+
+### Manual Deployment (Local)
+
+If you have `gh-pages` CLI installed locally:
+
+```bash
+npm run deploy
+```
+
+This command:
+1. Builds the project with `npm run build`
+2. Deploys the `dist/` folder to GitHub Pages using `gh-pages`
+
+## Monitoring Deployment
+
+### View Workflow Status
+
+1. Go to your repository: https://github.com/franciscombp/tanfacil
+2. Click **Actions** (top navigation)
+3. View the latest "Deploy to GitHub Pages" workflow
+4. Check the logs if deployment fails
+
+### Common Deployment Issues
+
+#### Issue: "Secrets are not available"
+**Solution**: Ensure all three secrets are set in repository settings.
+
+#### Issue: "Build failed"
+**Solution**: 
+- Check the workflow logs for build errors
+- Verify `.env.local` is in `.gitignore` (it should not be committed)
+- Ensure all dependencies are properly installed
+
+#### Issue: "Page not loading after deployment"
+**Solution**:
+- Wait 2-3 minutes for GitHub Pages to process
+- Clear browser cache (Ctrl+Shift+Del or Cmd+Shift+Del)
+- Check that Supabase credentials in secrets are correct
+- Verify the `base` in `vite.config.ts` is `/tanfacil/`
+
+## Application Access
+
+After successful deployment, access the application at:
+
+**https://franciscombp.github.io/tanfacil/**
+
+### First Time Setup
+
+1. Open the deployed URL
+2. Click "Panel administrativo" to create a new game
+3. Use the generated session code to join the game as a player
+
+## Rollback
+
+If you need to revert to a previous version:
+
+1. Go to **Actions** in your repository
+2. Click on the deployment you want to restore
+3. Look for the commit hash
+4. Reset to that commit locally:
+   ```bash
+   git reset --hard <commit-hash>
+   git push -f origin main
+   ```
+
+## Updating Application
+
+To update the deployed application:
+
+1. Make changes in your local branch
+2. Commit and push to `main`:
+   ```bash
+   git add .
+   git commit -m "Description of changes"
+   git push origin main
+   ```
+3. Wait for GitHub Actions to complete
+4. The updated version will be live within minutes
+
+## Environment Variables Reference
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `VITE_SUPABASE_URL` | Supabase project URL | `https://xxx.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Anonymous access key | `eyJh...` |
+| `VITE_ADMIN_TOKEN` | Admin authentication token | `ADMIN-SECRET-12345` |
+
+## Troubleshooting
+
+### Application loads but shows blank page
+- Open browser DevTools (F12)
+- Check Console for errors
+- Verify Supabase credentials are correct
+- Check if Supabase project is running
+
+### Game works locally but not on GitHub Pages
+- Common cause: Asset paths due to `base: '/tanfacil/'` in vite.config.ts
+- Verify browser can load static assets from DevTools Network tab
+- Check that all imports use the correct paths
+
+### Real-time updates not working
+- Verify Supabase Realtime is enabled in your project
+- Check that Row Level Security (RLS) allows anonymous access
+- Ensure WebSocket connections are not blocked by firewall/proxy
+
+## Success Indicators
+
+Deployment is successful when:
+
+✅ GitHub Actions workflow shows green checkmark
+✅ Application loads at https://franciscombp.github.io/tanfacil/
+✅ Home page displays with "Unirse a un juego" button
+✅ Admin login page is accessible
+✅ Real-time features work (voting, clue discovery)
+✅ Supabase connection is established
+
+## Support
+
+For deployment issues:
+1. Check GitHub Actions workflow logs
+2. Verify all repository secrets are set
+3. Ensure Supabase project is active and accessible
+4. Check browser console for error messages
