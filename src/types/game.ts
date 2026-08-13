@@ -76,6 +76,8 @@ export interface Scene {
   mode: 'scene' | 'investigate'
   /** Un desvío muestra la consecuencia y devuelve a un checkpoint. */
   detour: boolean
+  /** Qué aprendió el equipo en un desvío. No es un castigo. */
+  feedback?: string
   /** Checkpoint que se activa al llegar a esta escena. */
   checkpoint?: string
   /** Emoji de reserva por si la escena no tiene ilustración. */
@@ -97,10 +99,6 @@ export interface SceneOption {
   next?: string
   /** Saca una carta de este apartado del tablero. */
   draw?: string
-  /** Clave del coste en segundos definido en story.json. */
-  cost?: string
-  /** La trampa de la pila: fuerza las 12:00. */
-  forceNoon?: boolean
   /** Devuelve al último checkpoint. */
   returnToCheckpoint?: boolean
   /** @deprecated se mantiene para los componentes antiguos. */

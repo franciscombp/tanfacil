@@ -7,7 +7,6 @@ import { Scene, SceneOption } from '@/types/game'
  * tocar código. Aquí sólo se carga, se tipa y se valida.
  */
 
-export type CostKey = 'investigar' | 'preguntar' | 'actuar' | 'checkpoint'
 export type SlotId = 'objeto' | 'pared' | 'viga' | 'pasado' | 'presente' | 'oficina'
 
 export interface Card {
@@ -39,8 +38,6 @@ interface RawOption {
   label: string
   next?: string
   draw?: SlotId
-  cost?: CostKey
-  forceNoon?: boolean
   returnToCheckpoint?: boolean
 }
 
@@ -53,20 +50,30 @@ interface RawScene {
   art: string
   title: string
   text: string
+  feedback?: string
   options?: RawOption[]
+}
+
+export interface StorySummary {
+  title: string
+  leadLabel: string
+  reading: string
+  closing: string
+  labels: Record<string, string>
 }
 
 interface RawStory {
   title: string
   premise: string
-  clock: { startsAt: string; deadline: string; secondsAvailable: number }
+  /** El reloj es un distractor: marca la hora de la ficción, no un presupuesto. */
+  clock: { startsAt: string; deadline: string; purpose: string; measure: string }
   voteSeconds: number
-  costs: Record<CostKey, number>
   board: BoardSlot[]
   scenes: RawScene[]
   deck: Card[]
   checkpoints: Checkpoint[]
   conclusion: { sceneId: string; requiredSlots: SlotId[]; hint: string }
+  summary: StorySummary
 }
 
 const story = storyJson as unknown as RawStory
@@ -92,8 +99,6 @@ function toScene(raw: RawScene): Scene {
     label: option.label,
     next: option.next,
     draw: option.draw,
-    cost: option.cost,
-    forceNoon: option.forceNoon,
     returnToCheckpoint: option.returnToCheckpoint,
     // Compatibilidad con los componentes antiguos.
     nextScene: option.next ?? raw.id,
@@ -108,6 +113,7 @@ function toScene(raw: RawScene): Scene {
     art: raw.art,
     title: raw.title,
     text: raw.text,
+    feedback: raw.feedback,
     illustration: illustrationFor(raw.id),
     options,
     image: `${raw.art} ${raw.title}`.trim(),
@@ -118,8 +124,14 @@ export const STORY_TITLE = story.title
 export const PREMISE = story.premise
 export const CLOCK = story.clock
 export const VOTE_SECONDS = story.voteSeconds ?? 60
-export const COSTS = story.costs
+export const SUMMARY = story.summary
 export const BOARD_SLOTS = story.board
+
+/** Hora de inicio de la ficción, en segundos desde medianoche. */
+export const CLOCK_START_SECONDS = (() => {
+  const [hours, minutes] = story.clock.startsAt.split(':').map(Number)
+  return (hours || 0) * 3600 + (minutes || 0) * 60
+})()
 export const DECK = story.deck
 export const CHECKPOINTS = story.checkpoints
 export const CONCLUSION = story.conclusion
@@ -133,11 +145,27 @@ export const CARDS_BY_ID: Record<string, Card> = Object.fromEntries(
   story.deck.map((card) => [card.id, card])
 )
 
-/** Segundos que cuesta una opción. */
-export function costOf(option: SceneOption): number {
-  if (!option.cost) return 0
-  return COSTS[option.cost as CostKey] ?? 0
+/** Hora de la ficción tras `elapsed` segundos de partida (sigue pasadas las 12:00). */
+export function storyClock(elapsedSeconds: number): string {
+  const total = CLOCK_START_SECONDS + Math.max(0, elapsedSeconds)
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  return `${hours}:${String(minutes).padStart(2, '0')}`
 }
+
+/** mm:ss para los tiempos medidos. */
+export function formatDuration(seconds: number | null): string {
+  if (seconds === null) return '—'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+}
+
+/** Segundos de ficción que han pasado cuando el reloj llega a las 12:00. */
+export const SECONDS_TO_DEADLINE = (() => {
+  const [hours, minutes] = story.clock.deadline.split(':').map(Number)
+  return (hours || 0) * 3600 + (minutes || 0) * 60 - CLOCK_START_SECONDS
+})()
 
 /** Errores del guion: enlaces rotos o referencias inexistentes. */
 export function validateStory(): string[] {

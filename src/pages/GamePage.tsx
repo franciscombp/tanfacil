@@ -5,7 +5,13 @@ import { Check, Clock3, Crown, Hourglass, LogOut, Wifi, WifiOff } from 'lucide-r
 import { useGameStore } from '@/store/gameStore'
 import { useGameRoom } from '@/lib/gameRoom'
 import { pauseUpdates } from '@/lib/useAppVersion'
-import { BOARD_SLOTS, CHECKPOINTS } from '@/data/storyData'
+import {
+  BOARD_SLOTS,
+  CHECKPOINTS,
+  SUMMARY,
+  formatDuration,
+  storyClock,
+} from '@/data/storyData'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -15,14 +21,6 @@ import {
   QuestionnaireOptions,
   QuestionnaireQuestion,
 } from '@/components/ui/questionnaire'
-
-/** El reloj de la ficción: las 12:00 menos lo que queda. */
-function clockLabel(secondsLeft: number): string {
-  const total = 12 * 3600 - secondsLeft
-  const hours = Math.floor(total / 3600)
-  const minutes = Math.floor((total % 3600) / 60)
-  return `${hours}:${String(minutes).padStart(2, '0')}`
-}
 
 export default function GamePage() {
   const navigate = useNavigate()
@@ -49,7 +47,9 @@ export default function GamePage() {
     round,
     voteSecondsLeft,
     voteSeconds,
-    secondsLeft,
+    elapsedSeconds,
+    pastDeadline,
+    metrics,
     board,
     lastCard,
     checkpoints,
@@ -94,7 +94,6 @@ export default function GamePage() {
   const revealing = phase === 'reveal'
   const waitingForAdmin = phase === 'tie'
   const voteProgress = totalCount > 0 ? (votedCount / totalCount) * 100 : 0
-  const timeUrgent = secondsLeft <= 180
 
   const statusLine = waitingForAdmin
     ? 'Empate: el anfitrión decide.'
@@ -125,14 +124,16 @@ export default function GamePage() {
       {/* BARRA SUPERIOR */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
         <Badge
-          variant={timeUrgent ? 'destructive' : 'secondary'}
+          variant="secondary"
           className="font-mono text-sm"
-          title="El jefe llega a las 12:00"
+          title="La hora de la historia. No hay penalización por pasar de las 12:00."
         >
-          <Clock3 /> {clockLabel(secondsLeft)}
+          <Clock3 /> {storyClock(elapsedSeconds)}
         </Badge>
         <span className="hidden text-xs text-muted-foreground sm:inline">
-          El jefe llega a las 12:00
+          {pastDeadline
+            ? 'Son más de las 12:00 y no ha entrado nadie'
+            : 'El jefe lo pidió antes de las 12:00'}
         </span>
 
         <div className="ml-auto flex items-center gap-2">
@@ -205,9 +206,14 @@ export default function GamePage() {
           </p>
 
           {scene.detour && (
-            <Badge variant="outline" className="uppercase tracking-wide">
-              Desvío · esto no es un final
-            </Badge>
+            <div className="flex max-w-xl flex-col items-center gap-2">
+              <Badge variant="outline" className="uppercase tracking-wide">
+                Desvío · esto no es un final
+              </Badge>
+              {scene.feedback && (
+                <p className="text-sm text-muted-foreground">{scene.feedback}</p>
+              )}
+            </div>
           )}
           {isEnding && (
             <Badge variant="secondary" className="uppercase tracking-wide">
@@ -316,8 +322,46 @@ export default function GamePage() {
           </div>
 
           {isEnding ? (
-            <div className="border-t pt-3 text-center text-sm text-muted-foreground">
-              El anfitrión puede volver a empezar desde su panel.
+            <div className="space-y-4 border-t pt-4">
+              <div className="text-center">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {SUMMARY.leadLabel}
+                </p>
+                <p className="font-mono text-3xl font-semibold tabular-nums">
+                  {formatDuration(metrics.timeToConclusion ?? metrics.elapsedSeconds)}
+                </p>
+                <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+                  {SUMMARY.reading.replace(
+                    '{elapsed}',
+                    formatDuration(metrics.timeToConclusion ?? metrics.elapsedSeconds)
+                  )}
+                </p>
+              </div>
+
+              <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  ['timeToFirstAction', formatDuration(metrics.timeToFirstAction)],
+                  ['timeToFirstInvestigation', formatDuration(metrics.timeToFirstInvestigation)],
+                  ['detours', String(metrics.detours)],
+                  ['cardsDrawn', String(metrics.cardsDrawn)],
+                  ['keyCards', String(metrics.keyCards)],
+                  ['noiseCards', String(metrics.noiseCards)],
+                ].map(([key, value]) => (
+                  <div key={key} className="rounded-md border p-2 text-center">
+                    <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      {SUMMARY.labels[key]}
+                    </dt>
+                    <dd className="font-mono text-lg tabular-nums">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <p className="text-balance text-center text-sm font-medium">
+                {SUMMARY.closing}
+              </p>
+              <p className="text-center text-xs text-muted-foreground">
+                El anfitrión puede volver a empezar desde su panel.
+              </p>
             </div>
           ) : (
             <Questionnaire>

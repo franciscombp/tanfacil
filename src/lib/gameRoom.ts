@@ -4,14 +4,12 @@ import supabase, { isSupabaseConfigured } from './supabase'
 import {
   CARDS_BY_ID,
   CHECKPOINTS,
-  CLOCK,
   CONCLUSION,
-  COSTS,
   DECK,
+  SECONDS_TO_DEADLINE,
   START_SCENE,
   STORY_SCENES,
   VOTE_SECONDS,
-  costOf,
   type Card,
   type SlotId,
 } from '@/data/storyData'
@@ -48,7 +46,6 @@ interface Snapshot {
   sceneId: string
   drawn: string[]
   checkpoints: string[]
-  secondsLeft: number
 }
 
 /** Estado de la partida: lo publica el anfitrión y el resto lo replica. */
@@ -59,8 +56,16 @@ interface SharedState {
   /** Fin de la fase actual (epoch ms). 0 = sin límite. */
   deadline: number
   winner: string | null
-  /** Momento en que el reloj marcará las 12:00 (epoch ms). */
-  clockDeadline: number
+  /** Momento en que empezó la partida (epoch ms). El reloj sólo mide. */
+  startedAt: number
+  /** Momento en que se alcanzó un final (epoch ms). */
+  solvedAt: number | null
+  /** Primera intervención sobre el reloj, sin investigar antes (epoch ms). */
+  firstActionAt: number | null
+  /** Primera consulta de evidencia (epoch ms). */
+  firstInvestigationAt: number | null
+  /** Desvíos recorridos. */
+  detours: number
   /** Cartas reveladas, en orden. */
   drawn: string[]
   lastCard: string | null
@@ -107,16 +112,12 @@ function pickHost(members: RoomMember[]): RoomMember | null {
   return members.filter((m) => m.role === 'player').sort(bySeniority)[0] ?? null
 }
 
-/** Tiempo mínimo al volver de un desvío: si no, se volvería a las 12:00 en bucle. */
-const MIN_SECONDS_ON_RETURN = 120
-
 /** Siempre hay un punto al que volver, aunque no se haya activado ninguno aún. */
 function initialSnapshot(): Snapshot {
   return {
     sceneId: START_SCENE,
     drawn: [],
     checkpoints: [],
-    secondsLeft: CLOCK.secondsAvailable,
   }
 }
 
@@ -128,7 +129,11 @@ function initialState(): SharedState {
     phase: 'voting',
     deadline: now + VOTE_MS,
     winner: null,
-    clockDeadline: now + CLOCK.secondsAvailable * 1000,
+    startedAt: now,
+    solvedAt: null,
+    firstActionAt: null,
+    firstInvestigationAt: null,
+    detours: 0,
     drawn: [],
     lastCard: null,
     checkpoints: [],
@@ -266,7 +271,11 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
             phase: entry.phase ?? 'voting',
             deadline: entry.deadline ?? 0,
             winner: entry.winner ?? null,
-            clockDeadline: entry.clockDeadline ?? 0,
+            startedAt: entry.startedAt ?? Date.now(),
+            solvedAt: entry.solvedAt ?? null,
+            firstActionAt: entry.firstActionAt ?? null,
+            firstInvestigationAt: entry.firstInvestigationAt ?? null,
+            detours: entry.detours ?? 0,
             drawn: entry.drawn ?? [],
             lastCard: entry.lastCard ?? null,
             checkpoints: entry.checkpoints ?? [],
@@ -377,7 +386,14 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
 
   const baseScene = STORY_SCENES[state.sceneId] ?? null
 
-  const secondsLeft = Math.max(0, Math.ceil((state.clockDeadline - now) / 1000))
+  /** Tiempo real de la partida. No es un presupuesto: sólo se mide. */
+  const elapsedSeconds = Math.max(
+    0,
+    Math.floor(((state.solvedAt ?? now) - state.startedAt) / 1000)
+  )
+  /** El reloj de la ficción ya pasó de las 12:00 y no ha ocurrido nada. */
+  const pastDeadline = elapsedSeconds >= SECONDS_TO_DEADLINE
+
   const missingSlots = useMemo(() => {
     const solved = solvedSlots(state.drawn)
     return CONCLUSION.requiredSlots.filter((slot) => !solved.includes(slot))
@@ -426,7 +442,7 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
 
   const isTie = leaders.length > 1
 
-  /** Aplica la decisión ganadora: coste, carta, checkpoint y escena siguiente. */
+  /** Aplica la decisión ganadora: carta, checkpoint, métricas y escena siguiente. */
   const applyOption = useCallback(
     (optionId: string) => {
       if (!scene) return
@@ -434,34 +450,25 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
       if (!option) return
 
       const at = Date.now()
-      let clockDeadline = state.clockDeadline
       let drawn = state.drawn
       let lastCard: string | null = null
       let sceneId = option.next ?? scene.id
       let saved = state.saved
+
+      const isInvestigation = Boolean(option.draw)
+      // Intervenir es tocar el reloj; volver a un checkpoint no cuenta como tal.
+      const isIntervention = !isInvestigation && !option.returnToCheckpoint
 
       if (option.returnToCheckpoint) {
         // Volver atrás con lo aprendido: las cartas reveladas no se pierden.
         const point = saved ?? initialSnapshot()
         sceneId = point.sceneId
         lastCard = null
-        clockDeadline =
-          at +
-          Math.max(
-            MIN_SECONDS_ON_RETURN,
-            point.secondsLeft - COSTS.checkpoint
-          ) *
-            1000
-      } else {
-        clockDeadline -= costOf(option) * 1000
-        if (option.forceNoon) clockDeadline = at
-
-        if (option.draw) {
-          const card = drawCard(option.draw as SlotId, drawn)
-          if (card) {
-            drawn = [...drawn, card.id]
-            lastCard = card.id
-          }
+      } else if (option.draw) {
+        const card = drawCard(option.draw as SlotId, drawn)
+        if (card) {
+          drawn = [...drawn, card.id]
+          lastCard = card.id
         }
       }
 
@@ -471,16 +478,9 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
       const nextScene = STORY_SCENES[sceneId]
       if (nextScene?.checkpoint) checkpoints.push(nextScene.checkpoint)
 
-      const remaining = Math.max(0, Math.ceil((clockDeadline - at) / 1000))
-
       // Guardar checkpoint: el punto seguro al que volver.
       if (checkpoints.length > state.checkpoints.length && !nextScene?.detour) {
-        saved = { sceneId, drawn, checkpoints, secondsLeft: remaining }
-      }
-
-      // Se acabó el tiempo: llega el jefe (desvío, no final).
-      if (remaining === 0 && !nextScene?.detour && nextScene?.type !== 'ending') {
-        sceneId = 'desvio_jefe'
+        saved = { sceneId, drawn, checkpoints }
       }
 
       setShared({
@@ -489,11 +489,18 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
         phase: 'voting',
         winner: null,
         deadline: at + VOTE_MS,
-        clockDeadline,
         drawn,
         lastCard,
         checkpoints: [...new Set(checkpoints)],
         saved,
+        // Métricas: sólo se registra la primera vez de cada cosa.
+        firstActionAt:
+          state.firstActionAt ?? (isIntervention ? at : null),
+        firstInvestigationAt:
+          state.firstInvestigationAt ?? (isInvestigation ? at : null),
+        detours: state.detours + (nextScene?.detour ? 1 : 0),
+        solvedAt:
+          state.solvedAt ?? (nextScene?.type === 'ending' ? at : null),
       })
     },
     [scene, state, setShared]
@@ -554,19 +561,7 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
     setShared,
   ])
 
-  // El reloj también corre solo: al llegar a las 12:00 aparece el jefe.
-  useEffect(() => {
-    if (!isHost || !scene) return
-    if (secondsLeft > 0) return
-    if (scene.detour || scene.type === 'ending' || scene.id === 'desvio_jefe') return
-    setShared({
-      sceneId: 'desvio_jefe',
-      round: 0,
-      phase: 'voting',
-      winner: null,
-      deadline: Date.now() + VOTE_MS,
-    })
-  }, [isHost, scene, secondsLeft, setShared])
+  // Las 12:00 llegan y no pasa nada: ésa es la idea. El reloj sólo mide.
 
   const vote = useCallback(
     (optionId: string) => {
@@ -625,6 +620,25 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
     return grouped
   }, [state.drawn])
 
+  /**
+   * Lo que de verdad mide el juego: cuánto tardó el equipo en dejar de
+   * intervenir y empezar a entender. No hay puntuación, sólo datos para la
+   * conversación posterior.
+   */
+  const since = (moment: number | null): number | null =>
+    moment === null ? null : Math.floor((moment - state.startedAt) / 1000)
+
+  const metrics = {
+    elapsedSeconds,
+    timeToFirstAction: since(state.firstActionAt),
+    timeToFirstInvestigation: since(state.firstInvestigationAt),
+    timeToConclusion: since(state.solvedAt),
+    detours: state.detours,
+    cardsDrawn: state.drawn.length,
+    keyCards: state.drawn.filter((id) => CARDS_BY_ID[id]?.key).length,
+    noiseCards: state.drawn.filter((id) => CARDS_BY_ID[id]?.noise).length,
+  }
+
   return {
     pid,
     scene,
@@ -633,8 +647,11 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
     round: state.round,
     voteSecondsLeft,
     voteSeconds: VOTE_SECONDS,
-    /** Minutos y segundos que faltan para las 12:00. */
-    secondsLeft,
+    /** Segundos reales transcurridos: el reloj sólo mide. */
+    elapsedSeconds,
+    /** Ya pasaron las 12:00 y no ha entrado nadie. */
+    pastDeadline,
+    metrics,
     board,
     drawnCount: state.drawn.length,
     lastCard: state.lastCard ? (CARDS_BY_ID[state.lastCard] ?? null) : null,

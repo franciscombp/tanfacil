@@ -14,7 +14,13 @@ import {
 } from 'lucide-react'
 
 import { useGameRoom } from '@/lib/gameRoom'
-import { BOARD_SLOTS, CHECKPOINTS } from '@/data/storyData'
+import {
+  BOARD_SLOTS,
+  CHECKPOINTS,
+  SUMMARY,
+  formatDuration,
+  storyClock,
+} from '@/data/storyData'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,13 +34,6 @@ import { Progress } from '@/components/ui/progress'
 
 const ADMIN_PASSWORD = 'TAN_FACIL'
 const AUTH_KEY = 'tanfacil_admin_ok'
-
-function clockLabel(secondsLeft: number): string {
-  const total = 12 * 3600 - secondsLeft
-  const hours = Math.floor(total / 3600)
-  const minutes = Math.floor((total % 3600) / 60)
-  return `${hours}:${String(minutes).padStart(2, '0')}`
-}
 
 export default function AdminPage() {
   const navigate = useNavigate()
@@ -117,7 +116,9 @@ function AdminConsole({ onExit }: { onExit: () => void }) {
     phase,
     round,
     voteSecondsLeft,
-    secondsLeft,
+    elapsedSeconds,
+    pastDeadline,
+    metrics,
     board,
     checkpoints,
     savedCheckpoint,
@@ -173,12 +174,17 @@ function AdminConsole({ onExit }: { onExit: () => void }) {
         <Badge>
           <Crown /> Anfitrión
         </Badge>
-        <Badge
-          variant={secondsLeft <= 180 ? 'destructive' : 'secondary'}
-          className="font-mono"
-        >
-          <Clock3 /> {clockLabel(secondsLeft)}
+        <Badge variant="secondary" className="font-mono" title="Hora de la historia">
+          <Clock3 /> {storyClock(elapsedSeconds)}
         </Badge>
+        <Badge variant="outline" className="font-mono" title="Tiempo real de análisis">
+          {formatDuration(metrics.elapsedSeconds)}
+        </Badge>
+        {pastDeadline && (
+          <span className="hidden text-xs text-muted-foreground sm:inline">
+            Pasaron las 12:00 y no ha entrado nadie
+          </span>
+        )}
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {status === 'connected' ? (
             <Wifi className="size-3.5 text-emerald-500" />
@@ -359,6 +365,32 @@ function AdminConsole({ onExit }: { onExit: () => void }) {
                     </div>
                   )
                 })}
+              </CardContent>
+            </Card>
+
+            {/* MÉTRICAS */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Tiempos</CardTitle>
+                <CardDescription>
+                  Datos para la conversación posterior, no una puntuación.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-1.5 text-xs">
+                {[
+                  ['timeToFirstAction', formatDuration(metrics.timeToFirstAction)],
+                  ['timeToFirstInvestigation', formatDuration(metrics.timeToFirstInvestigation)],
+                  ['timeToConclusion', formatDuration(metrics.timeToConclusion)],
+                  ['detours', String(metrics.detours)],
+                  ['cardsDrawn', String(metrics.cardsDrawn)],
+                  ['keyCards', String(metrics.keyCards)],
+                  ['noiseCards', String(metrics.noiseCards)],
+                ].map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">{SUMMARY.labels[key]}</span>
+                    <span className="font-mono tabular-nums">{value}</span>
+                  </div>
+                ))}
               </CardContent>
             </Card>
 
