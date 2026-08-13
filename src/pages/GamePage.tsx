@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Crown, LogOut, Users, Wifi, WifiOff } from 'lucide-react'
+import { Check, Crown, Hourglass, LogOut, Wifi, WifiOff } from 'lucide-react'
 
 import { useGameStore } from '@/store/gameStore'
 import { useGameRoom, REVEAL_MS } from '@/lib/gameRoom'
@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import {
   Questionnaire,
-  QuestionnaireFooter,
   QuestionnaireOption,
   QuestionnaireOptions,
   QuestionnaireQuestion,
@@ -32,9 +31,10 @@ export default function GamePage() {
   const {
     scene,
     players,
+    pendingPlayers,
+    admin,
     status,
     isHost,
-    hostPid,
     pid,
     myVote,
     vote,
@@ -44,7 +44,7 @@ export default function GamePage() {
     totalCount,
     allVoted,
     winnerOptionId,
-  } = useGameRoom(playerDisplayName)
+  } = useGameRoom(playerDisplayName, 'player')
 
   // Cuenta atrás mostrada mientras se revelan los resultados.
   const [secondsLeft, setSecondsLeft] = useState(REVEAL_MS / 1000)
@@ -67,9 +67,7 @@ export default function GamePage() {
       <div className="fixed inset-0 grid place-items-center bg-background">
         <div className="text-center">
           <div className="mx-auto size-10 animate-spin rounded-full border-2 border-muted border-t-foreground" />
-          <p className="mt-4 text-sm text-muted-foreground">
-            Entrando a la sala…
-          </p>
+          <p className="mt-4 text-sm text-muted-foreground">Entrando a la sala…</p>
         </div>
       </div>
     )
@@ -79,6 +77,17 @@ export default function GamePage() {
   const isEnding = scene.type === 'ending' || scene.options.length === 0
   const progress = totalCount > 0 ? (votedCount / totalCount) * 100 : 0
   const winnerLabel = scene.options.find((o) => o.id === winnerOptionId)?.label
+
+  /** Una sola frase que explica qué está pasando ahora mismo. */
+  const statusLine = allVoted
+    ? `Todos votaron. Gana «${winnerLabel}» · siguiente escena en ${secondsLeft}…`
+    : myVote
+      ? pendingPlayers.length > 0
+        ? `Tu voto está registrado. Faltan por votar: ${pendingPlayers
+            .map((p) => p.name)
+            .join(', ')}`
+        : 'Tu voto está registrado. Esperando…'
+      : 'Elige una opción para votar'
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
@@ -90,14 +99,8 @@ export default function GamePage() {
         <Badge variant="outline" className="font-mono text-[11px]">
           {scene.id}
         </Badge>
-        <span
-          className="flex items-center gap-1.5 text-xs text-muted-foreground"
-          title={
-            status === 'connected'
-              ? 'Sincronizado con los demás jugadores'
-              : 'Sin sincronización en vivo'
-          }
-        >
+
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {status === 'connected' ? (
             <Wifi className="size-3.5 text-emerald-500" />
           ) : (
@@ -109,42 +112,20 @@ export default function GamePage() {
               }
             />
           )}
-          <span className="hidden sm:inline">
-            {status === 'connected'
-              ? 'En vivo'
-              : status === 'connecting'
-                ? 'Conectando…'
-                : 'Sin conexión'}
-          </span>
+          {status === 'connected'
+            ? 'En vivo'
+            : status === 'connecting'
+              ? 'Conectando…'
+              : 'Sin conexión'}
         </span>
 
-        {/* Jugadores conectados: anillo lleno = ya votó */}
-        <div className="ml-auto flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <Users className="size-4 text-muted-foreground" />
-            <div className="flex -space-x-1.5">
-              {players.slice(0, 8).map((player) => (
-                <span
-                  key={player.pid}
-                  title={`${player.name}${player.vote ? ' · ya votó' : ' · esperando'}`}
-                  className={[
-                    'grid size-7 place-items-center rounded-full border-2 bg-secondary text-[11px] font-semibold uppercase text-secondary-foreground ring-1 ring-background transition-colors',
-                    player.vote
-                      ? 'border-emerald-500'
-                      : 'border-transparent opacity-60',
-                    player.pid === pid ? 'ring-2 ring-primary' : '',
-                  ].join(' ')}
-                >
-                  {player.name.charAt(0) || '?'}
-                </span>
-              ))}
-              {players.length > 8 && (
-                <span className="grid size-7 place-items-center rounded-full border-2 border-transparent bg-muted text-[11px] font-medium text-muted-foreground ring-1 ring-background">
-                  +{players.length - 8}
-                </span>
-              )}
-            </div>
-          </div>
+        <div className="ml-auto flex items-center gap-2">
+          <Badge variant={admin ? 'secondary' : 'outline'} title="El admin dirige la partida">
+            <Crown />
+            <span className="hidden sm:inline">
+              {admin ? 'Anfitrión conectado' : 'Sin anfitrión'}
+            </span>
+          </Badge>
           <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
             <LogOut />
             <span className="hidden sm:inline">Salir</span>
@@ -189,32 +170,50 @@ export default function GamePage() {
       </main>
 
       {/* PANEL DE DECISIÓN */}
-      <footer className="max-h-[52vh] shrink-0 overflow-y-auto border-t bg-card/60 px-4 py-4 backdrop-blur sm:px-6">
-        <div className="mx-auto w-full max-w-4xl">
+      <footer className="max-h-[56vh] shrink-0 overflow-y-auto border-t bg-card/60 px-4 py-4 backdrop-blur sm:px-6">
+        <div className="mx-auto w-full max-w-4xl space-y-4">
+          {/* Quién está en la sala y quién ya votó */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Jugadores {totalCount > 0 && `· ${votedCount}/${totalCount} votaron`}
+            </span>
+            {players.map((player) => (
+              <span
+                key={player.pid}
+                className={[
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs',
+                  player.vote
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    : 'border-input text-muted-foreground',
+                ].join(' ')}
+              >
+                {player.vote ? (
+                  <Check className="size-3" />
+                ) : (
+                  <Hourglass className="size-3" />
+                )}
+                {player.name}
+                {player.pid === pid && ' (tú)'}
+              </span>
+            ))}
+          </div>
+
           {isEnding ? (
-            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <div className="flex flex-col items-center gap-3 border-t pt-4 sm:flex-row sm:justify-center">
               {isHost ? (
-                <Button onClick={restart}>Jugar de nuevo</Button>
+                <Button onClick={restart}>Volver a empezar</Button>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  El anfitrión puede reiniciar la partida para todos.
+                  El anfitrión decide si se juega otra vez.
                 </p>
               )}
               <Button variant="outline" onClick={() => navigate('/')}>
-                Volver al inicio
+                Salir
               </Button>
             </div>
           ) : (
             <Questionnaire>
-              <QuestionnaireQuestion
-                description={
-                  allVoted
-                    ? `Votación cerrada · gana «${winnerLabel}»`
-                    : myVote
-                      ? 'Voto registrado. Esperando a los demás jugadores…'
-                      : 'Elige una opción. La historia avanza cuando todos han votado.'
-                }
-              >
+              <QuestionnaireQuestion description={statusLine}>
                 ¿Qué hacemos?
               </QuestionnaireQuestion>
 
@@ -239,34 +238,11 @@ export default function GamePage() {
                 })}
               </QuestionnaireOptions>
 
-              <QuestionnaireFooter>
-                <span className="flex items-center gap-2">
-                  {isHost && (
-                    <Badge variant="secondary">
-                      <Crown /> Anfitrión
-                    </Badge>
-                  )}
-                  {votedCount} de {totalCount}{' '}
-                  {totalCount === 1 ? 'jugador ha votado' : 'jugadores han votado'}
-                </span>
-                <span className="flex flex-1 items-center gap-3 sm:justify-end">
-                  <Progress value={progress} className="h-1.5 max-w-48 flex-1" />
-                  {allVoted && (
-                    <span className="tabular-nums">
-                      Siguiente escena en {secondsLeft}…
-                    </span>
-                  )}
-                </span>
-              </QuestionnaireFooter>
+              <Progress value={progress} className="h-1.5" />
             </Questionnaire>
           )}
         </div>
       </footer>
-
-      {/* Marca del anfitrión para lectores de pantalla */}
-      <span className="sr-only">
-        {hostPid === pid ? 'Eres el anfitrión de la partida' : ''}
-      </span>
     </div>
   )
 }

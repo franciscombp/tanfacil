@@ -7,12 +7,13 @@ import { STORY_SCENES } from '@/data/storyData'
  * Sala única del POC.
  *
  * La sincronización se hace con Supabase Realtime Presence: no requiere tablas
- * ni políticas RLS, sólo la anon key. Cada jugador publica su estado
- * (nombre, escena actual y voto) y todos reciben el estado completo de la sala.
+ * ni políticas RLS, sólo la anon key. Cada participante publica su estado
+ * (nombre, rol, escena y voto) y todos reciben el estado completo de la sala.
  *
- * El "anfitrión" es el jugador que lleva más tiempo conectado. Es el único que
- * decide cuándo avanzar de escena; el resto sigue la escena del anfitrión, así
- * todos ven siempre lo mismo.
+ * El anfitrión es el admin (quien entra por /admin). Es el único que decide la
+ * escena; el resto la sigue, así todos ven siempre lo mismo. Si no hay admin
+ * conectado, el jugador más antiguo hace de anfitrión para que la partida no se
+ * quede bloqueada.
  */
 const ROOM = 'room:poc-session-001'
 const FIRST_SCENE = 'scene_001'
@@ -20,9 +21,15 @@ const FIRST_SCENE = 'scene_001'
 /** Tiempo que se muestran los resultados antes de avanzar. */
 export const REVEAL_MS = 4000
 
-export interface RoomPlayer {
+/** Si en este tiempo no hay conexión en vivo, se avisa en pantalla. */
+const CONNECT_TIMEOUT_MS = 10000
+
+export type RoomRole = 'player' | 'admin'
+
+export interface RoomMember {
   pid: string
   name: string
+  role: RoomRole
   joinedAt: number
   sceneId: string
   vote: string | null
@@ -30,22 +37,19 @@ export interface RoomPlayer {
 
 export type RoomStatus = 'connecting' | 'connected' | 'offline'
 
-/** Si en este tiempo no hay conexión en vivo, se avisa en pantalla. */
-const CONNECT_TIMEOUT_MS = 10000
-
-/** Identidad estable por pestaña: al recargar se mantiene el mismo jugador. */
-function getPlayerId(): string {
-  const KEY = 'tanfacil_pid'
+/** Identidad estable por pestaña: al recargar se mantiene el mismo participante. */
+function getPersistentId(role: RoomRole): string {
+  const KEY = `tanfacil_pid_${role}`
   let pid = sessionStorage.getItem(KEY)
   if (!pid) {
-    pid = `p_${Math.random().toString(36).slice(2, 10)}`
+    pid = `${role}_${Math.random().toString(36).slice(2, 10)}`
     sessionStorage.setItem(KEY, pid)
   }
   return pid
 }
 
-function getJoinedAt(): number {
-  const KEY = 'tanfacil_joined_at'
+function getJoinedAt(role: RoomRole): number {
+  const KEY = `tanfacil_joined_${role}`
   const stored = sessionStorage.getItem(KEY)
   if (stored) return Number(stored)
   const now = Date.now()
@@ -53,24 +57,27 @@ function getJoinedAt(): number {
   return now
 }
 
-/** El anfitrión es el más antiguo; el pid desempata para que todos coincidan. */
-function pickHost(players: RoomPlayer[]): RoomPlayer | null {
-  if (players.length === 0) return null
-  return [...players].sort(
-    (a, b) => a.joinedAt - b.joinedAt || a.pid.localeCompare(b.pid)
-  )[0]
+const bySeniority = (a: RoomMember, b: RoomMember) =>
+  a.joinedAt - b.joinedAt || a.pid.localeCompare(b.pid)
+
+/** Manda el admin; si no hay ninguno, el jugador más antiguo. */
+function pickHost(members: RoomMember[]): RoomMember | null {
+  const admins = members.filter((m) => m.role === 'admin').sort(bySeniority)
+  if (admins.length > 0) return admins[0]
+  const players = members.filter((m) => m.role === 'player').sort(bySeniority)
+  return players[0] ?? null
 }
 
-export function useGameRoom(displayName: string) {
-  const [players, setPlayers] = useState<RoomPlayer[]>([])
+export function useGameRoom(displayName: string, role: RoomRole = 'player') {
+  const [members, setMembers] = useState<RoomMember[]>([])
   const [sceneId, setSceneId] = useState<string>(FIRST_SCENE)
   const [myVote, setMyVote] = useState<string | null>(null)
   const [status, setStatus] = useState<RoomStatus>(
     isSupabaseConfigured ? 'connecting' : 'offline'
   )
 
-  const pid = useMemo(getPlayerId, [])
-  const joinedAt = useMemo(getJoinedAt, [])
+  const pid = useMemo(() => getPersistentId(role), [role])
+  const joinedAt = useMemo(() => getJoinedAt(role), [role])
 
   const channelRef = useRef<RealtimeChannel | null>(null)
   const subscribedRef = useRef(false)
@@ -85,17 +92,17 @@ export function useGameRoom(displayName: string) {
     void channelRef.current.track({
       pid,
       name: displayName,
+      role,
       joinedAt,
       sceneId,
       vote: myVote,
     })
-  }, [pid, joinedAt])
+  }, [pid, role, joinedAt])
 
   // Conexión al canal de la sala.
   useEffect(() => {
     if (!isSupabaseConfigured) return
 
-    // Sin conexión en vivo tras un tiempo razonable, se informa al jugador.
     const timeout = setTimeout(() => {
       if (!subscribedRef.current) setStatus('offline')
     }, CONNECT_TIMEOUT_MS)
@@ -107,21 +114,20 @@ export function useGameRoom(displayName: string) {
 
     channel
       .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState<RoomPlayer>()
+        const state = channel.presenceState<RoomMember>()
         const list = Object.values(state)
           .map((entries) => entries[0])
-          .filter((entry): entry is RoomPlayer & { presence_ref: string } =>
-            Boolean(entry && entry.pid)
-          )
-          .map(({ pid, name, joinedAt, sceneId, vote }) => ({
-            pid,
-            name,
-            joinedAt,
-            sceneId,
-            vote: vote ?? null,
+          .filter((entry) => Boolean(entry && entry.pid))
+          .map((entry) => ({
+            pid: entry.pid,
+            name: entry.name,
+            role: entry.role === 'admin' ? ('admin' as const) : ('player' as const),
+            joinedAt: entry.joinedAt,
+            sceneId: entry.sceneId,
+            vote: entry.vote ?? null,
           }))
-          .sort((a, b) => a.joinedAt - b.joinedAt)
-        setPlayers(list)
+          .sort(bySeniority)
+        setMembers(list)
       })
       .subscribe((state) => {
         if (state === 'SUBSCRIBED') {
@@ -153,21 +159,32 @@ export function useGameRoom(displayName: string) {
 
   const scene = STORY_SCENES[sceneId] ?? null
 
-  /** Uno siempre debe verse en la lista, aunque Presence aún no haya sincronizado. */
-  const roster = useMemo<RoomPlayer[]>(() => {
-    if (players.some((p) => p.pid === pid)) return players
-    const self: RoomPlayer = {
+  /** Uno siempre debe verse en la sala, aunque Presence aún no haya sincronizado. */
+  const roster = useMemo<RoomMember[]>(() => {
+    if (members.some((m) => m.pid === pid)) return members
+    const self: RoomMember = {
       pid,
       name: displayName,
+      role,
       joinedAt,
       sceneId,
       vote: myVote,
     }
-    return [...players, self].sort((a, b) => a.joinedAt - b.joinedAt)
-  }, [players, pid, displayName, joinedAt, sceneId, myVote])
+    return [...members, self].sort(bySeniority)
+  }, [members, pid, displayName, role, joinedAt, sceneId, myVote])
 
   const host = useMemo(() => pickHost(roster), [roster])
   const isHost = host?.pid === pid
+  const admin = useMemo(
+    () => roster.find((m) => m.role === 'admin') ?? null,
+    [roster]
+  )
+
+  // Sólo votan los jugadores; el admin modera.
+  const players = useMemo(
+    () => roster.filter((m) => m.role === 'player'),
+    [roster]
+  )
 
   // Los invitados siguen la escena del anfitrión.
   useEffect(() => {
@@ -178,10 +195,10 @@ export function useGameRoom(displayName: string) {
     }
   }, [host, pid, sceneId])
 
-  // Jugadores que ya están en la escena actual (los demás aún la están adoptando).
+  /** Jugadores que ya están en la escena actual (los demás la están adoptando). */
   const playersHere = useMemo(
-    () => roster.filter((p) => p.sceneId === sceneId),
-    [roster, sceneId]
+    () => players.filter((p) => p.sceneId === sceneId),
+    [players, sceneId]
   )
 
   const voteCounts = useMemo(() => {
@@ -194,6 +211,7 @@ export function useGameRoom(displayName: string) {
   }, [playersHere, scene])
 
   const votedCount = playersHere.filter((p) => p.vote).length
+  const pendingPlayers = playersHere.filter((p) => !p.vote)
   const allVoted =
     playersHere.length > 0 &&
     votedCount === playersHere.length &&
@@ -209,7 +227,20 @@ export function useGameRoom(displayName: string) {
     return voteCounts[winner] > 0 ? winner : null
   }, [scene, voteCounts])
 
-  // Sólo el anfitrión avanza, tras mostrar los resultados.
+  /** Avanza la historia. Sólo tiene efecto para el anfitrión. */
+  const advance = useCallback(
+    (optionId?: string) => {
+      if (!isHost || !scene) return
+      const chosen = optionId ?? winnerOptionId
+      const next = scene.options.find((o) => o.id === chosen)?.nextScene
+      if (!next) return
+      setSceneId(next)
+      setMyVote(null)
+    },
+    [isHost, scene, winnerOptionId]
+  )
+
+  // Avance automático tras mostrar los resultados.
   useEffect(() => {
     if (!isHost || !allVoted || !winnerOptionId || !scene) return
     const next = scene.options.find((o) => o.id === winnerOptionId)?.nextScene
@@ -222,12 +253,9 @@ export function useGameRoom(displayName: string) {
     return () => clearTimeout(timer)
   }, [isHost, allVoted, winnerOptionId, scene])
 
-  const vote = useCallback(
-    (optionId: string) => {
-      setMyVote((current) => current ?? optionId)
-    },
-    []
-  )
+  const vote = useCallback((optionId: string) => {
+    setMyVote((current) => current ?? optionId)
+  }, [])
 
   const restart = useCallback(() => {
     setSceneId(FIRST_SCENE)
@@ -238,12 +266,17 @@ export function useGameRoom(displayName: string) {
     pid,
     scene,
     sceneId,
-    players: playersHere.length > 0 ? playersHere : roster,
     status,
+    /** Jugadores de la escena actual (los que votan). */
+    players: playersHere.length > 0 ? playersHere : players,
+    pendingPlayers,
+    /** Admin conectado, si lo hay. */
+    admin,
     isHost,
     hostPid: host?.pid ?? null,
     myVote,
     vote,
+    advance,
     restart,
     voteCounts,
     votedCount,
