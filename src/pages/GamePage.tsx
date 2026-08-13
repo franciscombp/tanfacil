@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useGameStore } from '@/store/gameStore'
 import supabase from '@/lib/supabase'
+import { getSession, getCurrentVote } from '@/lib/gameService'
 import { Scene } from '@/types/game'
 import VotingPanel from '@/components/VotingPanel'
 import SceneView from '@/components/SceneView'
@@ -47,38 +48,89 @@ const MOCK_SCENES: Record<string, Scene> = {
 
 export default function GamePage() {
   const { sessionCode } = useParams()
+  const navigate = useNavigate()
+
+  const playerId = useGameStore((s) => s.playerId)
   const currentVote = useGameStore((s) => s.currentVote)
   const playerVoted = useGameStore((s) => s.playerVoted)
+  const setCurrentVote = useGameStore((s) => s.setCurrentVote)
+  const setPlayerVoted = useGameStore((s) => s.setPlayerVoted)
 
   const [currentScene, setCurrentScene] = useState<Scene | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!sessionCode) return
+    if (!sessionCode || !playerId) {
+      navigate('/join')
+      return
+    }
 
-    loadInitialScene()
-  }, [sessionCode])
+    setupGameListener()
+  }, [sessionCode, playerId])
 
-  const loadInitialScene = async () => {
+  const setupGameListener = async () => {
     try {
-      const { data: sessionData } = await supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('session_code', sessionCode)
-        .single()
+      const session = await getSession(sessionCode!)
+      if (!session) throw new Error('Session not found')
 
-      if (sessionData?.current_scene_id) {
-        const scene = MOCK_SCENES[sessionData.current_scene_id] || MOCK_SCENES.scene_001
-        setCurrentScene(scene)
-      } else {
-        setCurrentScene(MOCK_SCENES.scene_001)
+      // Load initial scene
+      const scene = MOCK_SCENES[session.current_scene_id || 'scene_001'] || MOCK_SCENES.scene_001
+      setCurrentScene(scene)
+
+      // Check for current vote
+      const vote = await getCurrentVote(session.id)
+      if (vote) {
+        setCurrentVote(vote)
+        // Check if player already voted
+        const hasVoted = vote && currentVote?.id
+        if (hasVoted) {
+          setPlayerVoted(true)
+        }
       }
 
       setLoading(false)
+
+      // Subscribe to session changes
+      supabase
+        .channel(`session:${sessionCode}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'game_sessions',
+            filter: `session_code=eq.${sessionCode}`,
+          },
+          (payload: any) => {
+            const newSceneId = payload.new.current_scene_id
+            const scene = MOCK_SCENES[newSceneId] || MOCK_SCENES.scene_001
+            setCurrentScene(scene)
+          }
+        )
+        .subscribe()
+
+      // Subscribe to votes changes
+      supabase
+        .channel(`votes:${sessionCode}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'votes',
+            filter: `session_code=eq.${sessionCode}`,
+          },
+          async () => {
+            const vote = await getCurrentVote(session.id)
+            if (vote) {
+              setCurrentVote(vote)
+            }
+          }
+        )
+        .subscribe()
     } catch (err) {
       console.error(err)
-      setCurrentScene(MOCK_SCENES.scene_001)
-      setLoading(false)
+      navigate('/join')
     }
   }
 

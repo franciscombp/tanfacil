@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useGameStore } from '@/store/gameStore'
-import supabase from '@/lib/supabase'
+import { submitVote } from '@/lib/gameService'
 import { Scene } from '@/types/game'
 import './components.css'
 
@@ -22,13 +22,8 @@ export default function VotingPanel({ scene }: VotingPanelProps) {
 
     setSubmitting(true)
     try {
-      const { error } = await supabase.from('player_votes').insert({
-        vote_id: currentVote.id,
-        player_id: playerId,
-        option_id: optionId,
-      })
-
-      if (error) throw error
+      const result = await submitVote(currentVote.id, playerId, optionId)
+      if (!result) throw new Error('Failed to submit vote')
 
       setPlayerVoted(true)
       setSelectedOption(optionId)

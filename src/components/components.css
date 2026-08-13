@@ -98,6 +98,52 @@
   font-size: 0.95rem;
 }
 
+.vote-progress-panel {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px 0;
+  background: rgba(79, 70, 229, 0.05);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.progress-text {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  min-width: 120px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.progress-percentage {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--accent);
+  min-width: 40px;
+  text-align: right;
+}
+
 @media (max-width: 768px) {
   .voting-options {
     grid-template-columns: 1fr;
@@ -110,5 +156,22 @@
 
   .scene-text {
     font-size: 1rem;
+  }
+
+  .progress-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .progress-text {
+    min-width: auto;
+  }
+
+  .progress-bar {
+    width: 100%;
+  }
+
+  .progress-percentage {
+    align-self: flex-end;
   }
 }

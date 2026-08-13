@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useGameStore } from '@/store/gameStore'
 import supabase from '@/lib/supabase'
+import { getSession, registerPlayer, getSessionPlayers } from '@/lib/gameService'
 import './pages.css'
 
 export default function LobbyPage() {
@@ -10,7 +11,6 @@ export default function LobbyPage() {
 
   const setSession = useGameStore((s) => s.setSession)
   const playerId = useGameStore((s) => s.playerId)
-  const setPlayerId = useGameStore((s) => s.setPlayerId)
   const playerDisplayName = useGameStore((s) => s.playerDisplayName)
   const players = useGameStore((s) => s.players)
   const setPlayers = useGameStore((s) => s.setPlayers)
@@ -19,47 +19,32 @@ export default function LobbyPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!sessionCode || !playerDisplayName) {
+    if (!sessionCode || !playerDisplayName || !playerId) {
       navigate('/join')
       return
     }
 
     setupPlayer()
-  }, [sessionCode, playerDisplayName])
+  }, [sessionCode, playerDisplayName, playerId])
 
   const setupPlayer = async () => {
     try {
-      // Get or create anonymous session
-      const { data: authData, error: authError } = await supabase.auth.signInAnonymously()
-      if (authError) throw authError
-
-      const userId = authData.session?.user.id
-      if (!userId) throw new Error('No user ID')
-
-      setPlayerId(userId)
-
       // Fetch session
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('session_code', sessionCode)
-        .single()
+      const session = await getSession(sessionCode!)
+      if (!session) throw new Error('Session not found')
 
-      if (sessionError) throw sessionError
-      setSession(sessionData)
+      setSession(session)
 
       // Register player
-      const { error: playerError } = await supabase.from('players').insert({
-        session_id: sessionData.id,
-        player_id: userId,
-        display_name: playerDisplayName,
-        connected: true,
-      })
+      await registerPlayer(session.id, playerId!, playerDisplayName)
 
-      if (playerError && !playerError.message.includes('duplicate')) throw playerError
+      // Fetch initial players
+      await fetchPlayers(session.id)
+      setIsConnected(true)
+      setLoading(false)
 
-      // Subscribe to players
-      const channel = supabase
+      // Subscribe to players changes
+      const playersChannel = supabase
         .channel(`players:${sessionCode}`)
         .on(
           'postgres_changes',
@@ -67,17 +52,13 @@ export default function LobbyPage() {
             event: '*',
             schema: 'public',
             table: 'players',
-            filter: `session_id=eq.${sessionData.id}`,
+            filter: `session_id=eq.${session.id}`,
           },
           () => {
-            fetchPlayers(sessionData.id)
+            fetchPlayers(session.id)
           }
         )
         .subscribe()
-
-      await fetchPlayers(sessionData.id)
-      setIsConnected(true)
-      setLoading(false)
 
       // Subscribe to session changes
       supabase
@@ -88,7 +69,7 @@ export default function LobbyPage() {
             event: 'UPDATE',
             schema: 'public',
             table: 'game_sessions',
-            filter: `id=eq.${sessionData.id}`,
+            filter: `id=eq.${session.id}`,
           },
           (payload: any) => {
             if (payload.new.status === 'running') {
@@ -99,7 +80,7 @@ export default function LobbyPage() {
         .subscribe()
 
       return () => {
-        channel.unsubscribe()
+        playersChannel.unsubscribe()
       }
     } catch (err) {
       console.error(err)
@@ -108,15 +89,8 @@ export default function LobbyPage() {
   }
 
   const fetchPlayers = async (sessionId: string) => {
-    const { data, error } = await supabase
-      .from('players')
-      .select('*')
-      .eq('session_id', sessionId)
-      .eq('connected', true)
-
-    if (!error && data) {
-      setPlayers(data)
-    }
+    const playersList = await getSessionPlayers(sessionId)
+    setPlayers(playersList)
   }
 
   if (loading) {

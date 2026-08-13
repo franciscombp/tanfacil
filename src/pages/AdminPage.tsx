@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import supabase from '@/lib/supabase'
 import './pages.css'
 
 export default function AdminPage() {
@@ -29,17 +28,12 @@ export default function AdminPage() {
     setCreatingSession(true)
 
     try {
-      const code = `RELOJ-${Math.floor(Math.random() * 1000)}`
+      const { createSession } = await import('@/lib/gameService')
+      const session = await createSession()
 
-      const { error: dbError } = await supabase.from('game_sessions').insert({
-        session_code: code,
-        status: 'lobby',
-        current_scene_id: 'scene_001',
-      })
+      if (!session) throw new Error('Failed to create session')
 
-      if (dbError) throw dbError
-
-      setSessionCode(code)
+      setSessionCode(session.session_code)
     } catch (err) {
       setError('Error al crear sesión')
       console.error(err)

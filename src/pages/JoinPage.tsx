@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '@/store/gameStore'
 import supabase from '@/lib/supabase'
+import { getSession } from '@/lib/gameService'
 import './pages.css'
 
 export default function JoinPage() {
   const navigate = useNavigate()
   const setSessionCode = useGameStore((s) => s.setSessionCode)
   const setPlayerDisplayName = useGameStore((s) => s.setPlayerDisplayName)
+  const setPlayerId = useGameStore((s) => s.setPlayerId)
 
   const [sessionCode, setInputCode] = useState('')
   const [displayName, setInputName] = useState('')
@@ -36,21 +38,24 @@ export default function JoinPage() {
       }
 
       // Verify session exists
-      const { data: session, error: sessionError } = await supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('session_code', code)
-        .single()
-
-      if (sessionError || !session) {
+      const session = await getSession(code)
+      if (!session) {
         setError('Código de sesión no válido')
         setLoading(false)
         return
       }
 
+      // Sign in anonymously
+      const { data: authData, error: authError } = await supabase.auth.signInAnonymously()
+      if (authError) throw authError
+
+      const userId = authData.session?.user.id
+      if (!userId) throw new Error('No user ID')
+
       // Store in state
       setSessionCode(code)
       setPlayerDisplayName(name)
+      setPlayerId(userId)
 
       // Navigate to lobby
       navigate(`/lobby/${code}`)
