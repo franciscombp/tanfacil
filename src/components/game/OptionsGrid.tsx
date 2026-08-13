@@ -16,7 +16,7 @@ export function OptionsGrid({ game }: { game: Game }) {
     scene,
     role,
     phase,
-    round,
+    repeatReason,
     myVote,
     vote,
     decide,
@@ -54,9 +54,11 @@ export function OptionsGrid({ game }: { game: Game }) {
           : myVote
             ? pendingLabel ||
               `Voto registrado. Se cierra en ${voteSecondsLeft ?? 0}s y puedes cambiarlo.`
-            : round > 0
-              ? 'Hubo empate sin anfitrión: se repite la votación. Debatan y vuelvan a votar.'
-              : 'Debatan y elijan una opción. El voto se puede cambiar hasta el cierre.'
+            : repeatReason === 'no_votes'
+              ? 'El tiempo terminó sin votos: se repite la votación.'
+              : repeatReason === 'tie'
+                ? 'Hubo empate sin anfitrión: se repite la votación. Debatan y vuelvan a votar.'
+                : 'Debatan y elijan una opción. El voto se puede cambiar hasta el cierre.'
 
   return (
     <Questionnaire className="w-full">

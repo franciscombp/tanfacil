@@ -22,6 +22,7 @@ export function initialState(story: Story, now: number): GameState {
     firstActionAt: null,
     firstInvestigationAt: null,
     detours: 0,
+    repeatReason: null,
     drawn: [],
     lastCard: null,
     checkpoints: [],
@@ -111,8 +112,9 @@ export function leadersOf(scene: Scene, counts: Record<string, number>): SceneOp
 }
 
 /**
- * Cierra la votación: ganadora única → revelado; empate → decide el admin,
- * y si no hay admin se repite la votación.
+ * Cierra la votación: ganadora única → revelado; sin ningún voto → se repite
+ * (no hay nada que decidir); empate → decide el admin, y si no hay admin se
+ * repite la votación.
  */
 export function resolveVote(
   story: Story,
@@ -126,19 +128,27 @@ export function resolveVote(
       ...state,
       phase: 'reveal',
       winner: leaders[0].id,
+      repeatReason: null,
       deadline: now + story.timers.revealSeconds * 1000,
     }
   }
-  if (hasAdmin) {
-    return { ...state, phase: 'tie', winner: null, deadline: 0 }
-  }
-  return {
+
+  const repeat = (reason: 'tie' | 'no_votes'): GameState => ({
     ...state,
     phase: 'voting',
     round: state.round + 1,
     winner: null,
+    repeatReason: reason,
     deadline: now + story.timers.voteSeconds * 1000,
+  })
+
+  // Nadie votó: repetir siempre; un "empate" sin votos no existe.
+  if (leaders.length === 0) return repeat('no_votes')
+
+  if (hasAdmin) {
+    return { ...state, phase: 'tie', winner: null, deadline: 0 }
   }
+  return repeat('tie')
 }
 
 /** El anfitrión fuerza una opción (empates, destrabar la partida). */
@@ -152,6 +162,7 @@ export function forceOption(
     ...state,
     phase: 'reveal',
     winner: optionId,
+    repeatReason: null,
     deadline: now + story.timers.revealSeconds * 1000,
   }
 }
@@ -209,6 +220,7 @@ export function applyOption(
     round: 0,
     phase: 'voting',
     winner: null,
+    repeatReason: null,
     deadline: now + story.timers.voteSeconds * 1000,
     drawn,
     lastCard,

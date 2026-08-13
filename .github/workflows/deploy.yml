@@ -29,6 +29,12 @@ jobs:
     - name: Install dependencies
       run: npm ci || npm install
 
+    - name: Avisar si faltan secrets de Supabase
+      run: |
+        if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ] || [ -z "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]; then
+          echo "::warning::No hay secrets VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY: el build usa las claves de respaldo del código."
+        fi
+
     - name: Build project
       run: npm run build
       env:

@@ -118,6 +118,8 @@ export interface GameState {
   firstActionAt: number | null
   firstInvestigationAt: number | null
   detours: number
+  /** Por qué se repite la ronda actual, para explicarlo en pantalla. */
+  repeatReason: 'tie' | 'no_votes' | null
   /** Cartas reveladas, en orden. */
   drawn: string[]
   lastCard: string | null

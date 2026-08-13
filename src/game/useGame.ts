@@ -233,6 +233,7 @@ export function useGame(displayName: string, role: RoomRole) {
       phase: 'voting',
       round: current.round + 1,
       winner: null,
+      repeatReason: null,
       deadline: Date.now() + story.timers.voteSeconds * 1000,
     })
   }, [isHost, commit])
@@ -282,6 +283,7 @@ export function useGame(displayName: string, role: RoomRole) {
     status,
     phase: state.phase,
     round: state.round,
+    repeatReason: state.repeatReason,
     voteSecondsLeft:
       state.deadline > 0 ? Math.max(0, Math.ceil((state.deadline - now) / 1000)) : null,
     elapsedSeconds,

@@ -79,11 +79,33 @@ describe('votación', () => {
     expect(next.phase).toBe('tie')
   })
 
-  it('en empate sin admin, repite la votación', () => {
+  it('en empate sin admin, repite la votación y lo dice', () => {
     const leaders = leadersOf(scene, tally(scene, ['actuar', 'mirar']))
     const next = resolveVote(story, state(), leaders, false, NOW)
     expect(next.phase).toBe('voting')
     expect(next.round).toBe(1)
+    expect(next.repeatReason).toBe('tie')
+  })
+
+  it('sin ningún voto, repite la votación (con o sin admin) sin llamarlo empate', () => {
+    const leaders = leadersOf(scene, tally(scene, []))
+    expect(leaders).toHaveLength(0)
+
+    const withAdmin = resolveVote(story, state(), leaders, true, NOW)
+    expect(withAdmin.phase).toBe('voting')
+    expect(withAdmin.repeatReason).toBe('no_votes')
+
+    const withoutAdmin = resolveVote(story, state(), leaders, false, NOW)
+    expect(withoutAdmin.phase).toBe('voting')
+    expect(withoutAdmin.repeatReason).toBe('no_votes')
+  })
+
+  it('una ganadora posterior limpia el motivo de repetición', () => {
+    const repeated = resolveVote(story, state(), [], false, NOW)
+    const leaders = leadersOf(scene, tally(scene, ['actuar']))
+    const next = resolveVote(story, repeated, leaders, false, NOW)
+    expect(next.phase).toBe('reveal')
+    expect(next.repeatReason).toBeNull()
   })
 })
 
