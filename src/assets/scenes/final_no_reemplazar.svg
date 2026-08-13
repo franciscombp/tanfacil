@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" role="img">
+  <defs>
+    <radialGradient id="lit" cx="45%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#2c2c35"/>
+      <stop offset="100%" stop-color="#23232a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="480" fill="#23232a"/>
+  <rect width="800" height="480" fill="url(#lit)"/>
+  <rect y="430" width="800" height="50" fill="#191920"/>
+  <rect y="428" width="800" height="3" fill="#12121a"/>
+
+  <circle cx="400" cy="200" r="104" fill="#2c2c35"/>
+  <circle cx="400" cy="200" r="104" fill="none" stroke="#2f2f3a" stroke-width="2"/>
+  <rect x="470" y="0" width="132" height="430" fill="#3b2f24"/>
+  <rect x="470" y="0" width="10" height="430" fill="#50412f"/>
+  <rect x="592" y="0" width="10" height="430" fill="#2b2119"/>
+  <rect x="624" y="240" width="150" height="112" rx="10" fill="#1d3a5c"/>
+  <rect x="624" y="240" width="150" height="22" rx="10" fill="#2a5484"/>
+  <g fill="#cfe0f2" font-family="monospace" font-size="19">
+    <text x="642" y="298">09:15</text><text x="642" y="330">16:15</text>
+  </g>
+  <path d="M676 352v26h46v-26z" fill="#16283d"/>
+  <rect x="650" y="378" width="98" height="8" rx="4" fill="#16283d"/>
+</svg>

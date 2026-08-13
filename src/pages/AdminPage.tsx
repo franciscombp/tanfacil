@@ -3,15 +3,18 @@ import { useNavigate } from 'react-router-dom'
 import {
   Check,
   ChevronRight,
+  Clock3,
   Crown,
   Hourglass,
   LogOut,
   RotateCcw,
+  Scale,
   Wifi,
   WifiOff,
 } from 'lucide-react'
 
 import { useGameRoom } from '@/lib/gameRoom'
+import { BOARD_SLOTS, CHECKPOINTS } from '@/data/storyData'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +28,13 @@ import { Progress } from '@/components/ui/progress'
 
 const ADMIN_PASSWORD = 'TAN_FACIL'
 const AUTH_KEY = 'tanfacil_admin_ok'
+
+function clockLabel(secondsLeft: number): string {
+  const total = 12 * 3600 - secondsLeft
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  return `${hours}:${String(minutes).padStart(2, '0')}`
+}
 
 export default function AdminPage() {
   const navigate = useNavigate()
@@ -55,17 +65,14 @@ export default function AdminPage() {
             </div>
             <CardTitle>Panel del anfitrión</CardTitle>
             <CardDescription>
-              El anfitrión dirige la partida: ve los votos y hace avanzar la
-              historia.
+              El anfitrión dirige la partida: ve las pistas, resuelve los empates
+              y hace avanzar la historia.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <label
-                  htmlFor="password"
-                  className="text-sm font-medium leading-none"
-                >
+                <label htmlFor="password" className="text-sm font-medium leading-none">
                   Contraseña
                 </label>
                 <input
@@ -78,7 +85,7 @@ export default function AdminPage() {
                   }}
                   autoFocus
                   aria-invalid={Boolean(error)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-[invalid=true]:border-destructive"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-[invalid=true]:border-destructive"
                 />
                 {error && <p className="text-sm text-destructive">{error}</p>}
               </div>
@@ -106,21 +113,29 @@ export default function AdminPage() {
 function AdminConsole({ onExit }: { onExit: () => void }) {
   const {
     scene,
+    status,
+    phase,
+    round,
+    voteSecondsLeft,
+    secondsLeft,
+    board,
+    checkpoints,
+    savedCheckpoint,
+    canConclude,
+    missingSlots,
     players,
     pendingPlayers,
-    status,
-    myVote: _myVote,
     advance,
+    closeVoteNow,
+    repeatVote,
     restart,
     voteCounts,
     votedCount,
     totalCount,
-    allVoted,
+    isTie,
+    leaders,
     winnerOptionId,
   } = useGameRoom('Anfitrión', 'admin')
-
-  // Evita el aviso de variable sin usar manteniendo la API del hook intacta.
-  void _myVote
 
   useEffect(() => {
     document.title = 'Anfitrión · No es tan fácil'
@@ -137,19 +152,20 @@ function AdminConsole({ onExit }: { onExit: () => void }) {
     )
   }
 
-  const isEnding = scene.type === 'ending' || scene.options.length === 0
+  const isEnding = scene.type === 'ending'
   const progress = totalCount > 0 ? (votedCount / totalCount) * 100 : 0
-  const winnerLabel = scene.options.find((o) => o.id === winnerOptionId)?.label
 
   const statusLine = isEnding
     ? 'La historia terminó. Puedes volver a empezar.'
-    : totalCount === 0
-      ? 'Nadie ha entrado todavía. Comparte el enlace del juego.'
-      : allVoted
-        ? `Todos votaron. Gana «${winnerLabel}»: la historia avanza sola en unos segundos.`
-        : pendingPlayers.length > 0
-          ? `Faltan por votar: ${pendingPlayers.map((p) => p.name).join(', ')}`
-          : 'Esperando votos…'
+    : phase === 'tie'
+      ? `Empate entre ${leaders.map((l) => `«${l.label}»`).join(' y ')}. Decide tú o repite la votación.`
+      : phase === 'reveal'
+        ? `Decidido: «${scene.options.find((o) => o.id === winnerOptionId)?.label}». Aplicando…`
+        : totalCount === 0
+          ? 'Nadie ha entrado todavía. Comparte el enlace del juego.'
+          : pendingPlayers.length > 0
+            ? `Faltan por votar: ${pendingPlayers.map((p) => p.name).join(', ')}`
+            : 'Todos han votado. Pueden cambiar el voto hasta que cierre.'
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
@@ -157,8 +173,11 @@ function AdminConsole({ onExit }: { onExit: () => void }) {
         <Badge>
           <Crown /> Anfitrión
         </Badge>
-        <Badge variant="outline" className="font-mono text-[11px]">
-          {scene.id}
+        <Badge
+          variant={secondsLeft <= 180 ? 'destructive' : 'secondary'}
+          className="font-mono"
+        >
+          <Clock3 /> {clockLabel(secondsLeft)}
         </Badge>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {status === 'connected' ? (
@@ -186,33 +205,56 @@ function AdminConsole({ onExit }: { onExit: () => void }) {
 
       {status === 'offline' && (
         <div className="shrink-0 border-b bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
-          Sin conexión en vivo: los jugadores no recibirán tus cambios de escena.
+          Sin conexión en vivo: los jugadores no recibirán tus decisiones.
         </div>
       )}
 
       <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
-        <div className="mx-auto grid w-full max-w-5xl gap-4 lg:grid-cols-[1fr_20rem]">
-          {/* ESCENA Y VOTOS */}
+        <div className="mx-auto grid w-full max-w-6xl gap-4 lg:grid-cols-[1fr_20rem]">
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardDescription>Escena actual</CardDescription>
-                <CardTitle className="text-xl">{scene.image}</CardTitle>
+                <CardDescription>
+                  Escena actual {scene.detour && '· desvío'}
+                </CardDescription>
+                <CardTitle className="text-xl">
+                  {scene.art} {scene.title}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {scene.illustration && (
+                  <img
+                    src={scene.illustration}
+                    alt={scene.title}
+                    className="max-h-56 w-full rounded-md border object-contain"
+                  />
+                )}
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   {scene.text}
                 </p>
 
-                <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                <div
+                  className={[
+                    'rounded-md border p-3 text-sm',
+                    phase === 'tie' ? 'border-primary bg-primary/5' : 'bg-muted/40',
+                  ].join(' ')}
+                >
+                  {phase === 'tie' && (
+                    <Scale className="mr-2 inline size-4 align-text-bottom" />
+                  )}
                   {statusLine}
+                  {round > 0 && phase === 'voting' && ` · ronda ${round + 1}`}
                 </div>
 
                 {!isEnding && (
                   <>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Votos recibidos</span>
+                        <span>
+                          Votos {phase === 'voting' && voteSecondsLeft !== null
+                            ? `· ${voteSecondsLeft}s`
+                            : ''}
+                        </span>
                         <span className="tabular-nums">
                           {votedCount}/{totalCount}
                         </span>
@@ -220,19 +262,17 @@ function AdminConsole({ onExit }: { onExit: () => void }) {
                       <Progress value={progress} className="h-2" />
                     </div>
 
-                    {/* Cada opción: recuento y avance manual */}
                     <ul className="space-y-2">
                       {scene.options.map((option) => {
                         const count = voteCounts[option.id] ?? 0
-                        const share =
-                          totalCount > 0 ? (count / totalCount) * 100 : 0
-                        const isWinner = winnerOptionId === option.id
+                        const share = totalCount > 0 ? (count / totalCount) * 100 : 0
+                        const isLeader = leaders.some((l) => l.id === option.id)
                         return (
                           <li
                             key={option.id}
                             className={[
                               'relative flex items-center gap-3 overflow-hidden rounded-md border p-3',
-                              isWinner ? 'border-primary' : '',
+                              isLeader ? 'border-primary' : '',
                             ].join(' ')}
                           >
                             <span
@@ -248,10 +288,9 @@ function AdminConsole({ onExit }: { onExit: () => void }) {
                             </span>
                             <Button
                               size="sm"
-                              variant={isWinner ? 'default' : 'outline'}
+                              variant={isLeader ? 'default' : 'outline'}
                               className="relative"
                               onClick={() => advance(option.id)}
-                              title="Avanzar la historia por esta opción"
                             >
                               Elegir <ChevronRight />
                             </Button>
@@ -265,17 +304,12 @@ function AdminConsole({ onExit }: { onExit: () => void }) {
             </Card>
 
             <div className="flex flex-wrap gap-2">
-              {!isEnding && (
-                <Button
-                  onClick={() => advance()}
-                  disabled={!winnerOptionId}
-                  title={
-                    winnerOptionId
-                      ? 'Cerrar la votación ahora y avanzar con la opción más votada'
-                      : 'Todavía no hay ningún voto'
-                  }
-                >
-                  Cerrar votación y avanzar
+              {!isEnding && phase === 'voting' && (
+                <Button onClick={closeVoteNow}>Cerrar votación ahora</Button>
+              )}
+              {!isEnding && (isTie || phase === 'tie') && (
+                <Button variant="outline" onClick={repeatVote}>
+                  Repetir votación
                 </Button>
               )}
               <Button variant="outline" onClick={restart}>
@@ -284,47 +318,116 @@ function AdminConsole({ onExit }: { onExit: () => void }) {
             </div>
           </div>
 
-          {/* JUGADORES */}
-          <Card className="h-fit">
-            <CardHeader>
-              <CardTitle className="text-base">
-                Jugadores ({players.length})
-              </CardTitle>
-              <CardDescription>
-                {votedCount} de {totalCount} han votado
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {players.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">
-                  Nadie conectado todavía
-                </p>
-              ) : (
-                players.map((player) => (
-                  <div
-                    key={player.pid}
-                    className="flex items-center gap-3 rounded-md border p-2.5"
-                  >
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-xs font-semibold uppercase">
-                      {player.name.charAt(0) || '?'}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm">
-                      {player.name}
-                    </span>
-                    {player.vote ? (
-                      <Badge variant="secondary" className="text-emerald-600 dark:text-emerald-400">
-                        <Check /> Votó
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-muted-foreground">
-                        <Hourglass /> Sin votar
-                      </Badge>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            {/* TABLERO */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Tablero de evidencias</CardTitle>
+                <CardDescription>
+                  {canConclude
+                    ? 'Ya se puede concluir: los jugadores tienen la opción.'
+                    : `Falta: ${missingSlots.join(', ')}`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {BOARD_SLOTS.map(({ slot, question }) => {
+                  const cards = board[slot] ?? []
+                  const solved = cards.some((card) => card.key)
+                  return (
+                    <div key={slot} className="space-y-1">
+                      <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {solved && <Check className="size-3 text-emerald-500" />}
+                        {slot}
+                      </p>
+                      {cards.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">{question}</p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {cards.map((card) => (
+                            <li
+                              key={card.id}
+                              className={[
+                                'rounded border p-2 text-xs',
+                                card.noise ? 'text-muted-foreground' : '',
+                              ].join(' ')}
+                            >
+                              {card.text}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+
+            {/* CHECKPOINTS */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Checkpoints</CardTitle>
+                <CardDescription>
+                  {savedCheckpoint
+                    ? 'Los desvíos vuelven al último punto guardado.'
+                    : 'Todavía no hay ninguno guardado.'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {CHECKPOINTS.map((checkpoint) => {
+                  const active = checkpoints.includes(checkpoint.id)
+                  return (
+                    <div
+                      key={checkpoint.id}
+                      className={[
+                        'rounded-md border p-2 text-xs',
+                        active ? 'border-emerald-500/40 bg-emerald-500/5' : 'opacity-60',
+                      ].join(' ')}
+                    >
+                      <p className="font-medium">
+                        {active ? '✔ ' : '○ '}
+                        {checkpoint.label}
+                      </p>
+                      <p className="text-muted-foreground">{checkpoint.note}</p>
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+
+            {/* JUGADORES */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Jugadores ({players.length})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {players.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    Nadie conectado todavía
+                  </p>
+                ) : (
+                  players.map((player) => (
+                    <div
+                      key={player.pid}
+                      className="flex items-center gap-2 rounded-md border p-2"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-sm">
+                        {player.name}
+                      </span>
+                      {player.vote ? (
+                        <Badge variant="secondary">
+                          <Check /> Votó
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          <Hourglass /> Sin votar
+                        </Badge>
+                      )}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>

@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Crown, Hourglass, LogOut, Wifi, WifiOff } from 'lucide-react'
+import { Check, Clock3, Crown, Hourglass, LogOut, Wifi, WifiOff } from 'lucide-react'
 
 import { useGameStore } from '@/store/gameStore'
-import { useGameRoom, REVEAL_MS } from '@/lib/gameRoom'
+import { useGameRoom } from '@/lib/gameRoom'
+import { BOARD_SLOTS, CHECKPOINTS } from '@/data/storyData'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -14,10 +15,12 @@ import {
   QuestionnaireQuestion,
 } from '@/components/ui/questionnaire'
 
-/** `scene.image` viene como "🕐 Reloj roto": el emoji es la ilustración y el resto el título. */
-function splitSceneArt(image: string): { art: string; title: string } {
-  const [art, ...rest] = image.trim().split(' ')
-  return { art, title: rest.join(' ') }
+/** El reloj de la ficción: las 12:00 menos lo que queda. */
+function clockLabel(secondsLeft: number): string {
+  const total = 12 * 3600 - secondsLeft
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  return `${hours}:${String(minutes).padStart(2, '0')}`
 }
 
 export default function GamePage() {
@@ -30,100 +33,98 @@ export default function GamePage() {
 
   const {
     scene,
+    status,
+    phase,
+    round,
+    voteSecondsLeft,
+    voteSeconds,
+    secondsLeft,
+    board,
+    lastCard,
+    checkpoints,
+    canConclude,
+    missingSlots,
     players,
     pendingPlayers,
     admin,
-    status,
-    isHost,
     pid,
     myVote,
     vote,
-    restart,
     voteCounts,
     votedCount,
     totalCount,
-    allVoted,
+    isTie,
     winnerOptionId,
   } = useGameRoom(playerDisplayName, 'player')
-
-  // Cuenta atrás mostrada mientras se revelan los resultados.
-  const [secondsLeft, setSecondsLeft] = useState(REVEAL_MS / 1000)
-  useEffect(() => {
-    if (!allVoted) {
-      setSecondsLeft(REVEAL_MS / 1000)
-      return
-    }
-    const timer = setInterval(
-      () => setSecondsLeft((s) => (s > 1 ? s - 1 : 1)),
-      1000
-    )
-    return () => clearInterval(timer)
-  }, [allVoted, scene?.id])
 
   if (!playerDisplayName) return null
 
   if (!scene) {
     return (
       <div className="fixed inset-0 grid place-items-center bg-background">
-        <div className="text-center">
-          <div className="mx-auto size-10 animate-spin rounded-full border-2 border-muted border-t-foreground" />
-          <p className="mt-4 text-sm text-muted-foreground">Entrando a la sala…</p>
-        </div>
+        <div className="size-10 animate-spin rounded-full border-2 border-muted border-t-foreground" />
       </div>
     )
   }
 
-  const { art, title } = splitSceneArt(scene.image)
-  const isEnding = scene.type === 'ending' || scene.options.length === 0
-  const progress = totalCount > 0 ? (votedCount / totalCount) * 100 : 0
-  const winnerLabel = scene.options.find((o) => o.id === winnerOptionId)?.label
+  const isEnding = scene.type === 'ending'
+  const revealing = phase === 'reveal'
+  const waitingForAdmin = phase === 'tie'
+  const voteProgress = totalCount > 0 ? (votedCount / totalCount) * 100 : 0
+  const timeUrgent = secondsLeft <= 180
 
-  /** Una sola frase que explica qué está pasando ahora mismo. */
-  const statusLine = allVoted
-    ? `Todos votaron. Gana «${winnerLabel}» · siguiente escena en ${secondsLeft}…`
-    : myVote
-      ? pendingPlayers.length > 0
-        ? `Tu voto está registrado. Faltan por votar: ${pendingPlayers
-            .map((p) => p.name)
-            .join(', ')}`
-        : 'Tu voto está registrado. Esperando…'
-      : 'Elige una opción para votar'
+  const statusLine = waitingForAdmin
+    ? 'Empate: el anfitrión decide.'
+    : revealing
+      ? `Decidido: «${scene.options.find((o) => o.id === winnerOptionId)?.label}»`
+      : myVote
+        ? pendingPlayers.length > 0
+          ? `Puedes cambiar tu voto. Faltan: ${pendingPlayers.map((p) => p.name).join(', ')}`
+          : 'Puedes cambiar tu voto hasta que se cierre.'
+        : round > 0
+          ? 'Hubo empate y no había anfitrión: se repite la votación.'
+          : 'Elige una opción para votar'
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
       {/* BARRA SUPERIOR */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-        <span className="hidden text-sm font-semibold tracking-tight sm:inline">
-          No es tan fácil
-        </span>
-        <Badge variant="outline" className="font-mono text-[11px]">
-          {scene.id}
+        <Badge
+          variant={timeUrgent ? 'destructive' : 'secondary'}
+          className="font-mono text-sm"
+          title="El jefe llega a las 12:00"
+        >
+          <Clock3 /> {clockLabel(secondsLeft)}
         </Badge>
-
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          {status === 'connected' ? (
-            <Wifi className="size-3.5 text-emerald-500" />
-          ) : (
-            <WifiOff
-              className={
-                status === 'offline'
-                  ? 'size-3.5 text-destructive'
-                  : 'size-3.5 text-muted-foreground'
-              }
-            />
-          )}
-          {status === 'connected'
-            ? 'En vivo'
-            : status === 'connecting'
-              ? 'Conectando…'
-              : 'Sin conexión'}
+        <span className="hidden text-xs text-muted-foreground sm:inline">
+          El jefe llega a las 12:00
         </span>
 
         <div className="ml-auto flex items-center gap-2">
-          <Badge variant={admin ? 'secondary' : 'outline'} title="El admin dirige la partida">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {status === 'connected' ? (
+              <Wifi className="size-3.5 text-emerald-500" />
+            ) : (
+              <WifiOff
+                className={
+                  status === 'offline'
+                    ? 'size-3.5 text-destructive'
+                    : 'size-3.5 text-muted-foreground'
+                }
+              />
+            )}
+            <span className="hidden sm:inline">
+              {status === 'connected'
+                ? 'En vivo'
+                : status === 'connecting'
+                  ? 'Conectando…'
+                  : 'Sin conexión'}
+            </span>
+          </span>
+          <Badge variant={admin ? 'secondary' : 'outline'}>
             <Crown />
             <span className="hidden sm:inline">
-              {admin ? 'Anfitrión conectado' : 'Sin anfitrión'}
+              {admin ? 'Con anfitrión' : 'Sin anfitrión'}
             </span>
           </Badge>
           <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
@@ -135,47 +136,115 @@ export default function GamePage() {
 
       {status === 'offline' && (
         <div className="shrink-0 border-b bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
-          Sin conexión en vivo: no verás a otros jugadores ni se sincronizarán las
-          escenas.
+          Sin conexión en vivo: no verás a otros jugadores ni se sincronizará la
+          partida.
         </div>
       )}
 
-      {/* ESCENA A PANTALLA COMPLETA */}
-      <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-6">
+      {/* ESCENA */}
+      <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-6">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--muted))_0%,hsl(var(--background))_70%)]"
         />
         <div
           key={scene.id}
-          className="relative flex animate-fade-up flex-col items-center gap-5 text-center"
+          className="relative flex animate-fade-up flex-col items-center gap-4 text-center"
         >
-          <div className="select-none text-[clamp(3.5rem,16vh,9rem)] leading-none drop-shadow-sm">
-            {art}
-          </div>
-          {title && (
-            <h1 className="text-xl font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:text-2xl">
-              {title}
-            </h1>
+          {scene.illustration ? (
+            <img
+              src={scene.illustration}
+              alt={scene.title}
+              className="max-h-[34vh] w-full max-w-2xl rounded-lg border object-contain shadow-lg"
+            />
+          ) : (
+            <div className="select-none text-[clamp(3rem,12vh,7rem)] leading-none">
+              {scene.art}
+            </div>
           )}
-          <p className="max-w-3xl text-balance text-lg leading-relaxed text-foreground/90 sm:text-2xl">
+          <h1 className="text-lg font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            {scene.title}
+          </h1>
+          <p className="max-w-3xl text-balance text-base leading-relaxed text-foreground/90 sm:text-xl">
             {scene.text}
           </p>
+
+          {scene.detour && (
+            <Badge variant="outline" className="uppercase tracking-wide">
+              Desvío · esto no es un final
+            </Badge>
+          )}
           {isEnding && (
             <Badge variant="secondary" className="uppercase tracking-wide">
-              Fin de la historia
+              Final
             </Badge>
+          )}
+
+          {/* Última pista revelada */}
+          {lastCard && !isEnding && (
+            <div className="mt-2 max-w-xl animate-fade-up rounded-lg border bg-card p-4 text-left">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Nueva pista · {lastCard.slot}
+              </p>
+              <p className="mt-1 text-sm">{lastCard.text}</p>
+              {lastCard.noise && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Es lo que alguien recuerda, no una prueba.
+                </p>
+              )}
+            </div>
           )}
         </div>
       </main>
 
-      {/* PANEL DE DECISIÓN */}
-      <footer className="max-h-[56vh] shrink-0 overflow-y-auto border-t bg-card/60 px-4 py-4 backdrop-blur sm:px-6">
-        <div className="mx-auto w-full max-w-4xl space-y-4">
-          {/* Quién está en la sala y quién ya votó */}
+      {/* TABLERO DE EVIDENCIAS */}
+      {!isEnding && (
+        <div className="shrink-0 border-t px-4 py-3">
+          <div className="mx-auto grid w-full max-w-5xl grid-cols-2 gap-2 sm:grid-cols-5">
+            {BOARD_SLOTS.map(({ slot, question }) => {
+              const cards = board[slot] ?? []
+              const solved = cards.some((card) => card.key)
+              return (
+                <div
+                  key={slot}
+                  className={[
+                    'rounded-md border p-2 text-left transition-colors',
+                    solved ? 'border-emerald-500/40 bg-emerald-500/5' : 'bg-card',
+                  ].join(' ')}
+                  title={cards.map((c) => c.text).join('\n') || 'Sin pistas todavía'}
+                >
+                  <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {solved && <Check className="size-3 text-emerald-500" />}
+                    {slot}
+                  </p>
+                  <p className="mt-0.5 line-clamp-2 text-[11px] leading-tight text-muted-foreground">
+                    {cards.length === 0 ? question : `${cards.length} pista(s)`}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+          {checkpoints.length > 0 && (
+            <div className="mx-auto mt-2 flex w-full max-w-5xl flex-wrap gap-1.5">
+              {checkpoints.map((id) => {
+                const checkpoint = CHECKPOINTS.find((c) => c.id === id)
+                return (
+                  <Badge key={id} variant="outline" className="text-[11px]" title={checkpoint?.note}>
+                    ✔ {checkpoint?.label ?? id}
+                  </Badge>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* DECISIÓN */}
+      <footer className="max-h-[46vh] shrink-0 overflow-y-auto border-t bg-card/60 px-4 py-4 backdrop-blur sm:px-6">
+        <div className="mx-auto w-full max-w-4xl space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Jugadores {totalCount > 0 && `· ${votedCount}/${totalCount} votaron`}
+              Jugadores {totalCount > 0 && `· ${votedCount}/${totalCount}`}
             </span>
             {players.map((player) => (
               <span
@@ -187,11 +256,7 @@ export default function GamePage() {
                     : 'border-input text-muted-foreground',
                 ].join(' ')}
               >
-                {player.vote ? (
-                  <Check className="size-3" />
-                ) : (
-                  <Hourglass className="size-3" />
-                )}
+                {player.vote ? <Check className="size-3" /> : <Hourglass className="size-3" />}
                 {player.name}
                 {player.pid === pid && ' (tú)'}
               </span>
@@ -199,28 +264,25 @@ export default function GamePage() {
           </div>
 
           {isEnding ? (
-            <div className="flex flex-col items-center gap-3 border-t pt-4 sm:flex-row sm:justify-center">
-              {isHost ? (
-                <Button onClick={restart}>Volver a empezar</Button>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  El anfitrión decide si se juega otra vez.
-                </p>
-              )}
-              <Button variant="outline" onClick={() => navigate('/')}>
-                Salir
-              </Button>
+            <div className="border-t pt-3 text-center text-sm text-muted-foreground">
+              El anfitrión puede volver a empezar desde su panel.
             </div>
           ) : (
             <Questionnaire>
               <QuestionnaireQuestion description={statusLine}>
-                ¿Qué hacemos?
+                {scene.mode === 'investigate' ? '¿Qué investigamos?' : '¿Qué hacemos?'}
               </QuestionnaireQuestion>
+
+              {scene.mode === 'investigate' && !canConclude && (
+                <p className="text-xs text-muted-foreground">
+                  Falta evidencia sobre: {missingSlots.join(', ')}
+                </p>
+              )}
 
               <QuestionnaireOptions
                 value={myVote ?? ''}
                 onValueChange={vote}
-                disabled={Boolean(myVote)}
+                disabled={phase !== 'voting'}
               >
                 {scene.options.map((option) => {
                   const count = voteCounts[option.id] ?? 0
@@ -229,16 +291,29 @@ export default function GamePage() {
                       key={option.id}
                       value={option.id}
                       label={option.label}
-                      revealed={allVoted}
+                      revealed={revealing || isTie}
                       count={count}
                       share={totalCount > 0 ? (count / totalCount) * 100 : 0}
-                      winner={allVoted && winnerOptionId === option.id}
+                      winner={revealing && winnerOptionId === option.id}
                     />
                   )
                 })}
               </QuestionnaireOptions>
 
-              <Progress value={progress} className="h-1.5" />
+              <div className="flex items-center gap-3">
+                <Progress value={voteProgress} className="h-1.5 flex-1" />
+                {phase === 'voting' && voteSecondsLeft !== null && (
+                  <span
+                    className={[
+                      'w-20 shrink-0 text-right text-xs tabular-nums',
+                      voteSecondsLeft <= 10 ? 'text-destructive' : 'text-muted-foreground',
+                    ].join(' ')}
+                    title={`Cada votación dura ${voteSeconds} segundos`}
+                  >
+                    {voteSecondsLeft}s para votar
+                  </span>
+                )}
+              </div>
             </Questionnaire>
           )}
         </div>
