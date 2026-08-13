@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useGameStore } from '@/store/gameStore'
 import supabase from '@/lib/supabase'
-import { getSession, getCurrentVote } from '@/lib/gameService'
+import { getSession, getCurrentVote, playerHasVoted } from '@/lib/gameService'
+import { useVoteMonitor } from '@/hooks/useVoteMonitor'
 import { Scene } from '@/types/game'
 import VotingPanel from '@/components/VotingPanel'
 import SceneView from '@/components/SceneView'
+import VoteProgressPanel from '@/components/VoteProgressPanel'
+import VoteResultsPanel from '@/components/VoteResultsPanel'
 import './pages.css'
 
 // Mock scenes for now
@@ -51,13 +54,15 @@ export default function GamePage() {
   const navigate = useNavigate()
 
   const playerId = useGameStore((s) => s.playerId)
-  const currentVote = useGameStore((s) => s.currentVote)
-  const playerVoted = useGameStore((s) => s.playerVoted)
   const setCurrentVote = useGameStore((s) => s.setCurrentVote)
   const setPlayerVoted = useGameStore((s) => s.setPlayerVoted)
 
   const [currentScene, setCurrentScene] = useState<Scene | null>(null)
+  const [currentVote, setCurrentVoteLocal] = useState<any>(null)
+  const [playerVoted, setPlayerVotedLocal] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  const voteStats = useVoteMonitor(currentVote?.id || null)
 
   useEffect(() => {
     if (!sessionCode || !playerId) {
@@ -68,24 +73,34 @@ export default function GamePage() {
     setupGameListener()
   }, [sessionCode, playerId])
 
+  useEffect(() => {
+    // Check if player already voted
+    if (currentVote && playerId) {
+      checkIfPlayerVoted()
+    }
+  }, [currentVote, playerId])
+
+  const checkIfPlayerVoted = async () => {
+    if (!currentVote) return
+    const hasVoted = await playerHasVoted(currentVote.id, playerId!)
+    setPlayerVotedLocal(hasVoted)
+    setPlayerVoted(hasVoted)
+  }
+
   const setupGameListener = async () => {
     try {
-      const session = await getSession(sessionCode!)
-      if (!session) throw new Error('Session not found')
+      const sessionData = await getSession(sessionCode!)
+      if (!sessionData) throw new Error('Session not found')
 
       // Load initial scene
-      const scene = MOCK_SCENES[session.current_scene_id || 'scene_001'] || MOCK_SCENES.scene_001
+      const scene = MOCK_SCENES[sessionData.current_scene_id || 'scene_001'] || MOCK_SCENES.scene_001
       setCurrentScene(scene)
 
       // Check for current vote
-      const vote = await getCurrentVote(session.id)
+      const vote = await getCurrentVote(sessionData.id)
       if (vote) {
+        setCurrentVoteLocal(vote)
         setCurrentVote(vote)
-        // Check if player already voted
-        const hasVoted = vote && currentVote?.id
-        if (hasVoted) {
-          setPlayerVoted(true)
-        }
       }
 
       setLoading(false)
@@ -105,6 +120,8 @@ export default function GamePage() {
             const newSceneId = payload.new.current_scene_id
             const scene = MOCK_SCENES[newSceneId] || MOCK_SCENES.scene_001
             setCurrentScene(scene)
+            setCurrentVoteLocal(null)
+            setPlayerVotedLocal(false)
           }
         )
         .subscribe()
@@ -118,12 +135,16 @@ export default function GamePage() {
             event: '*',
             schema: 'public',
             table: 'votes',
-            filter: `session_code=eq.${sessionCode}`,
+            filter: `session_id=eq.${sessionData.id}`,
           },
           async () => {
-            const vote = await getCurrentVote(session.id)
+            const vote = await getCurrentVote(sessionData.id)
             if (vote) {
+              setCurrentVoteLocal(vote)
               setCurrentVote(vote)
+            } else {
+              setCurrentVoteLocal(null)
+              setCurrentVote(null)
             }
           }
         )
@@ -149,12 +170,36 @@ export default function GamePage() {
       <div className="container">
         <SceneView scene={currentScene} />
 
-        {currentVote && !playerVoted ? (
-          <VotingPanel scene={currentScene} />
-        ) : playerVoted && currentVote ? (
-          <div className="voting-submitted">
-            <p>Tu decisión está registrada. Espera a que termine la votación.</p>
-          </div>
+        {currentVote && currentVote.status === 'open' && !playerVoted ? (
+          <>
+            <VotingPanel scene={currentScene} />
+            {voteStats && (
+              <VoteProgressPanel
+                totalPlayers={voteStats.totalPlayers}
+                votedCount={voteStats.votedCount}
+              />
+            )}
+          </>
+        ) : playerVoted && currentVote && currentVote.status === 'open' ? (
+          <>
+            <div className="voting-submitted">
+              <p>Tu decisión está registrada. Espera a que termine la votación.</p>
+            </div>
+            {voteStats && (
+              <VoteProgressPanel
+                totalPlayers={voteStats.totalPlayers}
+                votedCount={voteStats.votedCount}
+              />
+            )}
+          </>
+        ) : currentVote && currentVote.status === 'closed' && voteStats ? (
+          <VoteResultsPanel
+            vote={currentVote}
+            options={voteStats.options}
+            winnerOptionId={currentVote.winner_option_id}
+            onContinue={() => {}}
+            loading={false}
+          />
         ) : null}
       </div>
     </div>

@@ -73,6 +73,21 @@ export async function resetSession(sessionId: string): Promise<boolean> {
   }
 }
 
+export async function updateSceneId(sessionId: string, sceneId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('game_sessions')
+      .update({ current_scene_id: sceneId })
+      .eq('id', sessionId)
+
+    if (error) throw error
+    return true
+  } catch (err) {
+    console.error('Error updating scene:', err)
+    return false
+  }
+}
+
 /**
  * Player Management
  */

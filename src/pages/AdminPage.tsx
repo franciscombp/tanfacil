@@ -108,9 +108,9 @@ export default function AdminPage() {
               <div className="admin-actions">
                 <button
                   className="btn-primary"
-                  onClick={() => navigate(`/lobby/${sessionCode}`)}
+                  onClick={() => navigate(`/admin-game/${sessionCode}`)}
                 >
-                  Ir al lobby
+                  Ir al panel de control
                 </button>
                 <button
                   className="btn-secondary"
