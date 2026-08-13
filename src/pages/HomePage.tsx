@@ -4,12 +4,8 @@ import './pages.css'
 export default function HomePage() {
   const navigate = useNavigate()
 
-  const handleJoinGame = () => {
-    navigate('/join')
-  }
-
-  const handleAdminPanel = () => {
-    navigate('/admin')
+  const handleStartGame = () => {
+    navigate('/game')
   }
 
   return (
@@ -20,18 +16,14 @@ export default function HomePage() {
           <p className="subtitle">Una experiencia de votación cooperativa</p>
 
           <div className="home-actions">
-            <button className="btn-primary" onClick={handleJoinGame}>
-              Unirse a un juego
-            </button>
-            <button className="btn-secondary" onClick={handleAdminPanel}>
-              Panel administrativo
+            <button className="btn-primary" onClick={handleStartGame}>
+              Empezar
             </button>
           </div>
 
           <div className="home-info">
             <p>
-              Aproximadamente 50 jugadores votan juntos para tomar decisiones colectivas en una
-              historia interactiva.
+              Toma decisiones colectivas en una historia interactiva.
             </p>
           </div>
         </div>
