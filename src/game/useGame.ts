@@ -82,9 +82,28 @@ export function useGame(displayName: string, role: RoomRole) {
     [pid, displayName, role, joinedAt, myVote, voteKey]
   )
 
+  /**
+   * Anti-entropía: si alguien emite un estado más viejo que el mío (p. ej. un
+   * anfitrión recién llegado con la partida en cero), le respondo con el mío.
+   * Así un admin que entra tarde converge al estado real en un intercambio y
+   * nunca dirige una partida paralela.
+   */
+  const sendStateRef = useRef<((state: GameState) => void) | null>(null)
+  const lastCorrectionRef = useRef(0)
+
   // Estado entrante: manda la versión más alta, venga de quien venga.
   const onState = useCallback((incoming: GameState) => {
-    if (incoming.version > stateRef.current.version) setState(incoming)
+    if (incoming.version > stateRef.current.version) {
+      setState(incoming)
+      return
+    }
+    if (incoming.version < stateRef.current.version) {
+      const at = Date.now()
+      if (at - lastCorrectionRef.current > 2000) {
+        lastCorrectionRef.current = at
+        sendStateRef.current?.(stateRef.current)
+      }
+    }
   }, [])
 
   const { members, status, connectedAt, sendState } = useRoom({
@@ -93,6 +112,7 @@ export function useGame(displayName: string, role: RoomRole) {
     presence,
     onState,
   })
+  sendStateRef.current = sendState
 
   /** Uno siempre se ve en la sala, aunque la presencia tarde en sincronizar. */
   const roster = useMemo<RoomPresence[]>(() => {
@@ -202,6 +222,13 @@ export function useGame(displayName: string, role: RoomRole) {
 
   // ─── Acciones ────────────────────────────────────────────────────────────
 
+  /**
+   * Cualquier admin puede moderar, sea o no el anfitrión técnico (p. ej. con
+   * dos pestañas de admin abiertas, la que proyecta y la que controla). Su
+   * cambio viaja con versión más alta y la sala entera lo adopta.
+   */
+  const canModerate = role === 'admin' || isHost
+
   const vote = useCallback(
     (optionId: string) => {
       if (state.phase !== 'voting' || role !== 'player') return
@@ -210,23 +237,23 @@ export function useGame(displayName: string, role: RoomRole) {
     [state.phase, role]
   )
 
-  /** El anfitrión fuerza una opción: resuelve empates o destraba la partida. */
+  /** El admin fuerza una opción: resuelve empates o destraba la partida. */
   const decide = useCallback(
     (optionId: string) => {
-      if (!isHost || !scene) return
+      if (!canModerate || !scene) return
       if (!scene.options.some((option) => option.id === optionId)) return
       commit(forceOption(story, stateRef.current, optionId, Date.now()))
     },
-    [isHost, scene, commit]
+    [canModerate, scene, commit]
   )
 
   const closeVoteNow = useCallback(() => {
-    if (!isHost || stateRef.current.phase !== 'voting') return
+    if (!canModerate || stateRef.current.phase !== 'voting') return
     commit({ ...stateRef.current, deadline: Date.now() })
-  }, [isHost, commit])
+  }, [canModerate, commit])
 
   const repeatVote = useCallback(() => {
-    if (!isHost) return
+    if (!canModerate) return
     const current = stateRef.current
     commit({
       ...current,
@@ -236,12 +263,12 @@ export function useGame(displayName: string, role: RoomRole) {
       repeatReason: null,
       deadline: Date.now() + story.timers.voteSeconds * 1000,
     })
-  }, [isHost, commit])
+  }, [canModerate, commit])
 
   const restart = useCallback(() => {
-    if (!isHost) return
+    if (!canModerate) return
     commit(initialState(story, Date.now()))
-  }, [isHost, commit])
+  }, [canModerate, commit])
 
   // ─── Derivados para la interfaz ──────────────────────────────────────────
 
@@ -297,6 +324,7 @@ export function useGame(displayName: string, role: RoomRole) {
     pendingPlayers,
     admin,
     isHost,
+    canModerate,
     myVote,
     voteCounts,
     votedCount,

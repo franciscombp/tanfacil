@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 
-const ADMIN_PASSWORD = 'TAN_FACIL'
+const ADMIN_PASSWORD = 'PICHIBANK'
 const AUTH_KEY = 'tanfacil_admin_ok'
 
 /**
