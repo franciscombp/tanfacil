@@ -1,5 +1,5 @@
 import supabase from './supabase'
-import { GameSession, Player, Vote, PlayerVote, Clue, GameEvent } from '@/types/game'
+import { GameSession, Player, Vote, PlayerVote, Clue, Checkpoint, GameEvent } from '@/types/game'
 
 /**
  * Session Management
@@ -85,6 +85,76 @@ export async function updateSceneId(sessionId: string, sceneId: string): Promise
   } catch (err) {
     console.error('Error updating scene:', err)
     return false
+  }
+}
+
+/**
+ * Checkpoints Management
+ */
+
+export async function createCheckpoint(
+  sessionId: string,
+  sceneId: string,
+  clueIds: string[],
+  gameTimeSeconds: number
+): Promise<Checkpoint | null> {
+  try {
+    const { data, error } = await supabase
+      .from('checkpoints')
+      .insert({
+        session_id: sessionId,
+        scene_id: sceneId,
+        clue_ids: clueIds,
+        game_time_seconds: gameTimeSeconds,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (err) {
+    console.error('Error creating checkpoint:', err)
+    return null
+  }
+}
+
+export async function getSessionCheckpoints(sessionId: string): Promise<Checkpoint[]> {
+  try {
+    const { data, error } = await supabase
+      .from('checkpoints')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (err) {
+    console.error('Error fetching checkpoints:', err)
+    return []
+  }
+}
+
+export async function restoreCheckpoint(
+  sessionId: string,
+  checkpointId: string
+): Promise<Checkpoint | null> {
+  try {
+    const { data, error } = await supabase
+      .from('checkpoints')
+      .select('*')
+      .eq('id', checkpointId)
+      .eq('session_id', sessionId)
+      .single()
+
+    if (error) throw error
+
+    // Update session to checkpoint state
+    await updateSceneId(sessionId, data.scene_id)
+
+    return data
+  } catch (err) {
+    console.error('Error restoring checkpoint:', err)
+    return null
   }
 }
 

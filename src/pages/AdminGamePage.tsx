@@ -10,46 +10,9 @@ import {
   logEvent,
 } from '@/lib/gameService'
 import AdminVoteControl from '@/components/AdminVoteControl'
+import { STORY_SCENES } from '@/data/storyData'
 import { Scene } from '@/types/game'
 import './pages.css'
-
-// Mock scenes
-const MOCK_SCENES: Record<string, Scene> = {
-  scene_001: {
-    id: 'scene_001',
-    type: 'vote',
-    image: '/images/clock-beam.png',
-    text: 'El jefe pidió arreglar el reloj antes de las 12:00.',
-    options: [
-      { id: 'solve_now', label: 'Solucionarlo', nextScene: 'scene_002' },
-      { id: 'think', label: 'Déjame pensarlo', nextScene: 'scene_003' },
-    ],
-  },
-  scene_002: {
-    id: 'scene_002',
-    type: 'reveal',
-    image: '/images/painted-half-clock.png',
-    text: 'La forma del reloj está completa.',
-    options: [
-      { id: 'remove_beam', label: 'Quitar la viga', nextScene: 'scene_beam_warning' },
-      { id: 'move_clock', label: 'Mover el reloj', nextScene: 'scene_hole_reveal' },
-      { id: 'erase_paint', label: 'Borrar la pintura', nextScene: 'scene_paint_cleanup' },
-      { id: 'think_again', label: 'Déjame pensarlo', nextScene: 'scene_003' },
-    ],
-  },
-  scene_003: {
-    id: 'scene_003',
-    type: 'investigation',
-    image: '/images/clock-close.png',
-    text: 'Todavía no has tocado nada.',
-    options: [
-      { id: 'look_clock', label: 'Mirar el reloj', nextScene: 'scene_003' },
-      { id: 'check_wall', label: 'Revisar la pared', nextScene: 'scene_003' },
-      { id: 'ask_history', label: 'Preguntar qué había antes', nextScene: 'scene_003' },
-      { id: 'act', label: 'Actuar de todas formas', nextScene: 'scene_002' },
-    ],
-  },
-}
 
 export default function AdminGamePage() {
   const { sessionCode } = useParams()
@@ -78,7 +41,7 @@ export default function AdminGamePage() {
       setSession(sessionData)
 
       const sceneId = sessionData.current_scene_id || 'scene_001'
-      const scene = MOCK_SCENES[sceneId]
+      const scene = STORY_SCENES[sceneId]
       setCurrentScene(scene)
 
       await fetchPlayers(sessionData.id)
@@ -99,7 +62,7 @@ export default function AdminGamePage() {
           },
           (payload: any) => {
             setSession(payload.new)
-            const scene = MOCK_SCENES[payload.new.current_scene_id]
+            const scene = STORY_SCENES[payload.new.current_scene_id]
             if (scene) {
               setCurrentScene(scene)
             }
