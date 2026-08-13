@@ -9,13 +9,15 @@ The application is configured for automatic deployment to GitHub Pages via GitHu
 1. GitHub Actions runs the build process
 2. TypeScript is compiled
 3. React application is built with Vite
-4. Built files are deployed to GitHub Pages
+4. Built files are saved to the `/docs` folder in the main branch
+5. GitHub Pages automatically serves the content from `/docs`
 
-## Current Deployment Status
+## Current Deployment Configuration
 
 - **Repository**: https://github.com/franciscombp/tanfacil
 - **GitHub Pages URL**: https://franciscombp.github.io/tanfacil/
-- **Branch**: `main`
+- **Branch**: `main` (all content in one branch)
+- **Serve from**: `/docs` folder
 - **Workflow**: `.github/workflows/deploy.yml`
 
 ## Prerequisites
@@ -60,13 +62,14 @@ Before the deployment workflow can function, you need to set up repository secre
 2. Click **Pages** (left sidebar)
 3. Under "Build and deployment":
    - **Source**: Select "Deploy from a branch"
-   - **Branch**: Select `main` branch
+   - **Branch**: Select `main`
    - **Folder**: Select `/docs`
 4. Click **Save**
 
 ## Triggering Deployment
 
 ### Automatic Deployment
+
 Simply push to the `main` branch:
 
 ```bash
@@ -82,6 +85,7 @@ The GitHub Actions workflow will automatically:
 4. GitHub Pages automatically serves from `/docs`
 
 ### Local Build (Optional)
+
 To build locally without deployment:
 
 ```bash
@@ -99,26 +103,32 @@ This creates production files in the `docs/` folder ready for GitHub Pages.
 3. View the latest "Deploy to GitHub Pages" workflow
 4. Check the logs if deployment fails
 
-### Common Deployment Issues
+### Check Live Application
 
-#### Issue: "Secrets are not available"
+After deployment completes (5-10 minutes):
+- **URL**: https://franciscombp.github.io/tanfacil/
+- Clear cache if needed: `Ctrl+Shift+Delete` (then reload)
+
+## Common Deployment Issues
+
+### Issue: "Secrets are not available"
 **Solution**: Ensure all three secrets are set in repository settings.
 
-#### Issue: "Build failed"
+### Issue: "Build failed"
 **Solution**: 
 - Check the workflow logs for build errors
 - Verify `.env.local` is in `.gitignore` (it should not be committed)
 - Ensure all dependencies are properly installed
 
-#### Issue: "Page not loading after deployment"
+### Issue: "Page not loading after deployment"
 **Solution**:
 - Wait 2-3 minutes for GitHub Pages to process
-- Clear browser cache (Ctrl+Shift+Del or Cmd+Shift+Del)
+- Clear browser cache (Ctrl+Shift+Delete or Cmd+Shift+Delete)
 - Check that Supabase credentials in secrets are correct
 - Verify the `base` in `vite.config.ts` is `/tanfacil/`
 - Ensure GitHub Pages is configured to serve from `/docs` folder in `main` branch
 
-#### Issue: "GitHub Actions workflow failed"
+### Issue: "GitHub Actions workflow failed"
 **Solution**:
 - Check the workflow logs for the specific error
 - Ensure all 3 secrets are set in repository
@@ -172,23 +182,20 @@ To update the deployed application:
 | `VITE_SUPABASE_ANON_KEY` | Anonymous access key | `eyJh...` |
 | `VITE_ADMIN_TOKEN` | Admin authentication token | `ADMIN-SECRET-12345` |
 
-## Troubleshooting
+## Deployment Structure
 
-### Application loads but shows blank page
-- Open browser DevTools (F12)
-- Check Console for errors
-- Verify Supabase credentials are correct
-- Check if Supabase project is running
-
-### Game works locally but not on GitHub Pages
-- Common cause: Asset paths due to `base: '/tanfacil/'` in vite.config.ts
-- Verify browser can load static assets from DevTools Network tab
-- Check that all imports use the correct paths
-
-### Real-time updates not working
-- Verify Supabase Realtime is enabled in your project
-- Check that Row Level Security (RLS) allows anonymous access
-- Ensure WebSocket connections are not blocked by firewall/proxy
+```
+main branch/
+├── src/                    # Source code
+├── package.json           # Dependencies
+├── vite.config.ts         # Vite config with base path
+├── docs/                  # Production build (served by GitHub Pages)
+│   ├── index.html
+│   ├── assets/
+│   └── .nojekyll         # Prevents Jekyll processing
+├── DEPLOYMENT.md          # This file
+└── README.md             # Project info
+```
 
 ## Success Indicators
 
@@ -208,3 +215,4 @@ For deployment issues:
 2. Verify all repository secrets are set
 3. Ensure Supabase project is active and accessible
 4. Check browser console for error messages
+5. Verify GitHub Pages settings point to `/docs` on `main` branch
