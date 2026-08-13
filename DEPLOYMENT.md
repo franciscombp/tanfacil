@@ -51,10 +51,12 @@ Before the deployment workflow can function, you need to set up repository secre
 - **Value**: Your Supabase anon key
 - Click **Add secret**
 
-#### Secret 3: VITE_ADMIN_TOKEN
-- **Name**: `VITE_ADMIN_TOKEN`
-- **Value**: `ADMIN-SECRET-12345` (or your chosen admin token)
+#### Secret 3: TAN_FACIL
+- **Name**: `TAN_FACIL`
+- **Value**: (Your admin authentication token)
 - Click **Add secret**
+
+Note: This secret is used as VITE_ADMIN_TOKEN in the build process.
 
 ### Step 3: Enable GitHub Pages
 

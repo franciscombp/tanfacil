@@ -30,7 +30,7 @@ jobs:
       env:
         VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
         VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        VITE_ADMIN_TOKEN: ${{ secrets.VITE_ADMIN_TOKEN }}
+        VITE_ADMIN_TOKEN: ${{ secrets.TAN_FACIL }}
 
     - name: Commit and push if there are changes
       run: |
