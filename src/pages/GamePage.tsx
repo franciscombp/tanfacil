@@ -5,10 +5,13 @@ import supabase from '@/lib/supabase'
 import { registerPlayer, getSessionPlayers, openVote, submitVote, closeVote, updateSceneId } from '@/lib/gameService'
 import { STORY_SCENES } from '@/data/storyData'
 import { Scene } from '@/types/game'
-import SceneView from '@/components/SceneView'
-import './pages.css'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { LogOut, Users, CheckCircle2, Clock } from 'lucide-react'
 
-const GAME_SESSION_ID = 'poc-session-001' // Sesión única para POC
+const GAME_SESSION_ID = 'poc-session-001'
 
 export default function GamePage() {
   const navigate = useNavigate()
@@ -24,33 +27,24 @@ export default function GamePage() {
   const [playerHasVoted, setPlayerHasVoted] = useState(false)
   const [votedOption, setVotedOption] = useState<string | null>(null)
 
-  // Inicializar jugador y escenas
   useEffect(() => {
     if (!playerDisplayName) {
       navigate('/')
       return
     }
-
     initializePlayer()
   }, [playerDisplayName])
 
-  // Suscribirse a cambios de escena y jugadores
   useEffect(() => {
     if (!playerId) return
-
     subscribeToGameUpdates()
   }, [playerId])
 
   const initializePlayer = async () => {
     try {
-      // Generar un ID único para el jugador
       const newPlayerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       setPlayerId(newPlayerId)
-
-      // Registrar jugador en Supabase
       await registerPlayer(GAME_SESSION_ID, newPlayerId, playerDisplayName)
-
-      // Cargar lista de jugadores
       fetchPlayers()
       setLoading(false)
     } catch (error) {
@@ -69,38 +63,24 @@ export default function GamePage() {
   }
 
   const subscribeToGameUpdates = () => {
-    // Suscribirse a cambios de jugadores
     const playersChannel = supabase
       .channel(`players:${GAME_SESSION_ID}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'players',
-          filter: `session_id=eq.${GAME_SESSION_ID}`,
-        },
-        () => {
-          fetchPlayers()
-        }
-      )
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'players',
+        filter: `session_id=eq.${GAME_SESSION_ID}`,
+      }, () => fetchPlayers())
       .subscribe()
 
-    // Suscribirse a cambios de votación
     const votesChannel = supabase
       .channel(`votes:${GAME_SESSION_ID}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'votes',
-          filter: `session_id=eq.${GAME_SESSION_ID}`,
-        },
-        () => {
-          fetchVoteStatus()
-        }
-      )
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'votes',
+        filter: `session_id=eq.${GAME_SESSION_ID}`,
+      }, () => fetchVoteStatus())
       .subscribe()
 
     return () => {
@@ -121,13 +101,11 @@ export default function GamePage() {
     if (!playerId || !currentScene) return
 
     try {
-      // Crear votación si no existe
       if (!currentVote) {
         const vote = await openVote(GAME_SESSION_ID, currentScene.id, currentScene.options)
         setCurrentVote(vote)
       }
 
-      // Registrar voto del jugador
       if (currentVote) {
         await submitVote(currentVote.id, playerId, optionId)
         setVotedOption(optionId)
@@ -142,9 +120,7 @@ export default function GamePage() {
     if (!currentVote) return
 
     try {
-      // Cerrar votación
       await closeVote(currentVote.id, votedOption || '')
-      // Actualizar escena
       await updateSceneId(GAME_SESSION_ID, nextSceneId)
       setCurrentSceneId(nextSceneId)
       setCurrentVote(null)
@@ -161,11 +137,21 @@ export default function GamePage() {
     return selectedOption?.nextScene || null
   }
 
+  const playersWhoVoted = players.filter(p => {
+    // Simular que el jugador actual votó si playerHasVoted es true
+    return playerHasVoted && p.player_id === playerId
+  }).length
+
+  const votedPercentage = players.length > 0 ? (playersWhoVoted / players.length) * 100 : 0
+
   if (loading || !currentScene) {
     return (
-      <div className="page page-game">
-        <div className="container flex-center" style={{ height: '100vh' }}>
-          Cargando...
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          </div>
+          <p className="text-white mt-4 text-lg font-medium">Cargando juego...</p>
         </div>
       </div>
     )
@@ -174,71 +160,169 @@ export default function GamePage() {
   const isEndingScene = currentScene.type === 'ending'
 
   return (
-    <div className="page page-game">
-      <div className="container">
-        {/* TOP BAR */}
-        <div className="game-top-bar">
-          <div className="game-status">
-            <span className="scene-counter">Escena: {currentScene.id}</span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* HEADER */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-white">
+            <h1 className="text-3xl font-bold">No es tan fácil</h1>
+            <p className="text-blue-100 text-sm mt-1">Escena {currentScene.id}</p>
           </div>
-          <button className="btn-secondary" onClick={() => navigate('/')} style={{ fontSize: '14px', padding: '8px 16px' }}>
+          <Button
+            variant="outline"
+            className="bg-white/20 border-white text-white hover:bg-white/30"
+            onClick={() => navigate('/')}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
             Salir
-          </button>
+          </Button>
         </div>
 
-        {/* MAIN CONTENT */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 250px', gap: '24px', marginTop: '24px' }}>
-          {/* SCENE */}
-          <div>
-            <SceneView scene={currentScene} />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* MAIN SCENE - 3 columns */}
+          <div className="lg:col-span-3">
+            <Card className="border-0 shadow-2xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-500 text-white pb-4">
+                <CardTitle className="text-2xl">{currentScene.image}</CardTitle>
+              </CardHeader>
 
-            {isEndingScene ? (
-              <div className="ending-container">
-                <div className="ending-text">{currentScene.text}</div>
-                <button className="btn-primary" onClick={() => navigate('/')} style={{ marginTop: '20px' }}>
-                  Volver al inicio
-                </button>
-              </div>
-            ) : (
-              <div style={{ marginTop: '40px' }}>
-                <div className="voting-options">
-                  {currentScene.options.map((option) => (
-                    <button
-                      key={option.id}
-                      className={`voting-option ${votedOption === option.id ? 'selected' : ''}`}
-                      onClick={() => handleVote(option.id)}
-                      disabled={playerHasVoted}
+              <CardContent className="p-8">
+                {isEndingScene ? (
+                  <div className="space-y-6">
+                    <div className="prose max-w-none">
+                      <p className="text-lg text-gray-700 leading-relaxed">{currentScene.text}</p>
+                    </div>
+                    <Button
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                      size="lg"
+                      onClick={() => navigate('/')}
                     >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-                {playerHasVoted && getNextSceneId() && (
-                  <button
-                    className="btn-primary"
-                    onClick={() => handleContinueToNextScene(getNextSceneId()!)}
-                    style={{ marginTop: '20px', width: '100%' }}
-                  >
-                    Continuar a la siguiente escena
-                  </button>
+                      Volver al inicio
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {/* Scene Description */}
+                    <div>
+                      <p className="text-lg text-gray-700 mb-6 leading-relaxed">{currentScene.text}</p>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600 font-medium">Progreso de votación</span>
+                        <span className="text-gray-500">{Math.round(votedPercentage)}%</span>
+                      </div>
+                      <Progress value={votedPercentage} className="h-3" />
+                    </div>
+
+                    {/* Voting Options */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-gray-700">¿Qué hacemos?</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {currentScene.options.map((option) => (
+                          <Button
+                            key={option.id}
+                            variant={votedOption === option.id ? "default" : "outline"}
+                            className={`h-auto py-4 px-4 text-left justify-start transition-all ${
+                              votedOption === option.id
+                                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0'
+                                : 'hover:border-blue-500'
+                            } ${playerHasVoted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            onClick={() => handleVote(option.id)}
+                            disabled={playerHasVoted}
+                          >
+                            <span className="font-medium">{option.label}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Continue Button */}
+                    {playerHasVoted && getNextSceneId() && (
+                      <Button
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold"
+                        size="lg"
+                        onClick={() => handleContinueToNextScene(getNextSceneId()!)}
+                      >
+                        Continuar a la siguiente escena
+                      </Button>
+                    )}
+
+                    {/* Vote Status */}
+                    {playerHasVoted && (
+                      <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span>¡Tu voto ha sido registrado!</span>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* PLAYERS LIST */}
-          <div className="players-panel">
-            <h3>Jugadores ({players.length})</h3>
-            <div className="players-list-game">
-              {players.map((player) => (
-                <div key={player.id} className="player-item-game">
-                  <div className="player-name-game">{player.display_name}</div>
-                  <div className={`player-vote-status ${playerHasVoted && player.player_id === playerId ? 'voted' : ''}`}>
-                    {playerHasVoted && player.player_id === playerId ? '✓ Votó' : '○ Esperando'}
-                  </div>
+          {/* PLAYERS PANEL - 1 column */}
+          <div className="lg:col-span-1">
+            <Card className="border-0 shadow-2xl h-full">
+              <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-500 text-white pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Users className="w-5 h-5" />
+                  Jugadores ({players.length})
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="p-4">
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {players.length === 0 ? (
+                    <p className="text-gray-500 text-sm text-center py-8">Esperando jugadores...</p>
+                  ) : (
+                    players.map((player) => {
+                      const hasVoted = playerHasVoted && player.player_id === playerId
+                      const isCurrentPlayer = player.player_id === playerId
+
+                      return (
+                        <div
+                          key={player.id}
+                          className={`p-3 rounded-lg border transition-all ${
+                            isCurrentPlayer
+                              ? 'bg-blue-50 border-blue-300'
+                              : 'bg-gray-50 border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm truncate text-gray-800">
+                                {player.display_name}
+                                {isCurrentPlayer && (
+                                  <span className="ml-1 text-xs text-blue-600 font-semibold">(Tú)</span>
+                                )}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={hasVoted ? 'default' : 'secondary'}
+                              className="flex-shrink-0 whitespace-nowrap"
+                            >
+                              {hasVoted ? (
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Votó
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  Esperando
+                                </div>
+                              )}
+                            </Badge>
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
                 </div>
-              ))}
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
