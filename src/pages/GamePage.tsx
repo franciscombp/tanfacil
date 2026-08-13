@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Clock3, Crown, Hourglass, LogOut, Wifi, WifiOff } from 'lucide-react'
 
@@ -38,6 +38,10 @@ export default function GamePage() {
     return () => pauseUpdates(false)
   }, [])
 
+  // Cortinilla entre escenas: el cambio no debe ser un corte seco.
+  const [changing, setChanging] = useState(false)
+  const previousScene = useRef<string | null>(null)
+
   const {
     scene,
     status,
@@ -64,6 +68,18 @@ export default function GamePage() {
     winnerOptionId,
   } = useGameRoom(playerDisplayName, 'player')
 
+  const sceneId = scene?.id ?? null
+  useEffect(() => {
+    if (!sceneId) return
+    if (previousScene.current && previousScene.current !== sceneId) {
+      setChanging(true)
+      const timer = setTimeout(() => setChanging(false), 700)
+      previousScene.current = sceneId
+      return () => clearTimeout(timer)
+    }
+    previousScene.current = sceneId
+  }, [sceneId])
+
   if (!playerDisplayName) return null
 
   if (!scene) {
@@ -87,13 +103,25 @@ export default function GamePage() {
       : myVote
         ? pendingPlayers.length > 0
           ? `Puedes cambiar tu voto. Faltan: ${pendingPlayers.map((p) => p.name).join(', ')}`
-          : 'Puedes cambiar tu voto hasta que se cierre.'
+          : `Voto registrado. La votación se cierra en ${voteSecondsLeft ?? 0}s y puedes cambiarlo hasta entonces.`
         : round > 0
           ? 'Hubo empate y no había anfitrión: se repite la votación.'
           : 'Elige una opción para votar'
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
+      {/* CORTINILLA ENTRE ESCENAS */}
+      {changing && (
+        <div
+          key={scene.id}
+          className="pointer-events-none fixed inset-0 z-50 grid animate-curtain place-items-center bg-background"
+        >
+          <p className="animate-pulse-soft text-sm uppercase tracking-[0.3em] text-muted-foreground">
+            {scene.detour ? 'Consecuencia' : scene.type === 'ending' ? 'Desenlace' : 'Siguiente paso'}
+          </p>
+        </div>
+      )}
+
       {/* BARRA SUPERIOR */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
         <Badge
@@ -187,8 +215,25 @@ export default function GamePage() {
             </Badge>
           )}
 
+          {/* Decisión tomada: se muestra antes de aplicarla */}
+          {revealing && (
+            <div className="animate-fade-up rounded-lg border border-primary bg-primary/5 px-5 py-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Decisión del grupo
+              </p>
+              <p className="mt-1 font-semibold">
+                {scene.options.find((o) => o.id === winnerOptionId)?.label}
+              </p>
+              {voteSecondsLeft !== null && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Continúa en {voteSecondsLeft}…
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Última pista revelada */}
-          {lastCard && !isEnding && (
+          {lastCard && !isEnding && !revealing && (
             <div className="mt-2 max-w-xl animate-fade-up rounded-lg border bg-card p-4 text-left">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Nueva pista · {lastCard.slot}

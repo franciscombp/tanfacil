@@ -49,9 +49,21 @@ export default {
           from: { opacity: '0', transform: 'translateY(8px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
+        // Cortinilla entre escenas: cubre y se retira.
+        curtain: {
+          '0%': { opacity: '1' },
+          '55%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
+        'pulse-soft': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.55' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.35s ease-out',
+        curtain: 'curtain 0.7s ease-in-out forwards',
+        'pulse-soft': 'pulse-soft 1.4s ease-in-out infinite',
       },
     },
   },

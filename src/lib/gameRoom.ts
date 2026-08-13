@@ -231,8 +231,15 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
     const backoff = Math.min(30_000, 2000 * 2 ** Math.min(retry, 4))
     let rejoin: ReturnType<typeof setTimeout> | undefined
 
+    /**
+     * Al cerrar el canal, Supabase avisa con CLOSED en este mismo callback.
+     * Sin esta marca, la limpieza del efecto programaría otro reintento, que
+     * volvería a limpiar: un bucle de crear y destruir que no conecta nunca.
+     */
+    let disposed = false
+
     const scheduleRejoin = (reason: string) => {
-      if (rejoin) return
+      if (disposed || rejoin) return
       console.info(`[sala] ${reason}: reintentando en ${backoff / 1000}s`)
       rejoin = setTimeout(() => setRetry((r) => r + 1), backoff)
     }
@@ -270,6 +277,8 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
         setMembers(list)
       })
       .subscribe((subscription) => {
+        if (disposed) return
+
         if (subscription === 'SUBSCRIBED') {
           subscribedRef.current = true
           setStatus('connected')
@@ -300,6 +309,7 @@ export function useGameRoom(displayName: string, role: RoomRole = 'player') {
     window.addEventListener('online', onVisible)
 
     return () => {
+      disposed = true
       clearTimeout(timeout)
       if (rejoin) clearTimeout(rejoin)
       document.removeEventListener('visibilitychange', onVisible)
