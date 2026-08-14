@@ -57,8 +57,13 @@ export interface QuestionnaireOptionProps
   /** Porcentaje 0-100 usado por la barra de resultado. */
   share?: number
   winner?: boolean
-  /** Ya se intentó este camino: se apaga con claridad, sin desaparecer. */
-  spent?: boolean
+  /**
+   * Estado según las reglas, no según quién mira. El facilitador recibe todas
+   * las opciones inertes porque no vota, y atenuar por el atributo `disabled`
+   * dejaba la pantalla proyectada —la que ve la sala— con las cuatro opciones
+   * apagadas por igual y la ganadora del revelado también.
+   */
+  state?: 'active' | 'spent' | 'outOfRunoff'
 }
 
 const QuestionnaireOption = React.forwardRef<
@@ -66,7 +71,17 @@ const QuestionnaireOption = React.forwardRef<
   QuestionnaireOptionProps
 >(
   (
-    { className, label, badge, revealed, count = 0, share = 0, winner, spent, ...props },
+    {
+      className,
+      label,
+      badge,
+      revealed,
+      count = 0,
+      share = 0,
+      winner,
+      state = 'active',
+      ...props
+    },
     ref
   ) => (
     <RadioGroupPrimitive.Item
@@ -77,22 +92,38 @@ const QuestionnaireOption = React.forwardRef<
         'active:translate-y-0 active:scale-[0.99]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         'disabled:pointer-events-none',
-        // Desactivada por "ya intentado": se apaga de verdad, pero se lee.
-        spent ? 'opacity-35 saturate-50' : 'disabled:opacity-45',
+        /*
+         * La atenuación depende de la regla, nunca de quién mira: en la
+         * pantalla proyectada todas las opciones están inertes y aun así
+         * tienen que leerse. Además de la opacidad, cada estado lleva una
+         * señal de forma —borde discontinuo, tachado— para que se distinga
+         * de lejos y sin depender del color.
+         */
+        state === 'spent' && 'border-dashed opacity-40',
+        state === 'outOfRunoff' && 'opacity-60',
         'data-[state=checked]:border-primary data-[state=checked]:bg-primary/10 data-[state=checked]:shadow-lg data-[state=checked]:shadow-primary/10',
         winner && 'border-primary ring-2 ring-primary/40',
         className
       )}
       {...props}
     >
-      {/* Barra de resultado, detrás del contenido */}
-      {revealed ? (
-        <span
-          aria-hidden
-          className="absolute inset-y-0 left-0 bg-primary/15 transition-all duration-700 ease-out"
-          style={{ width: `${share}%` }}
-        />
-      ) : null}
+      {/*
+        Barra de resultado, detrás del contenido. Se monta siempre y crece
+        desde cero: montándola ya con su anchura final, la transición no
+        llegaba a correr nunca y el recuento aparecía de golpe, justo en el
+        momento que la sala está mirando.
+      */}
+      <span
+        aria-hidden
+        className={cn(
+          'absolute inset-y-0 left-0 transition-[width] duration-700 ease-out',
+          winner ? 'bg-primary/25' : 'bg-primary/12'
+        )}
+        style={{
+          width: revealed ? `${share}%` : '0%',
+          transitionDelay: winner ? '160ms' : '0ms',
+        }}
+      />
 
       {badge ? (
         <span

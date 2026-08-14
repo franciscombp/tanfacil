@@ -114,7 +114,9 @@ export function OptionsGrid({ game }: { game: Game }) {
               value={option.id}
               disabled={!votable}
               badge={LETTERS[index] ?? String(index + 1)}
-              spent={option.disabled}
+              state={
+                option.disabled ? 'spent' : option.outOfRunoff ? 'outOfRunoff' : 'active'
+              }
               label={
                 <span className="flex flex-col gap-0.5">
                   <span className="flex flex-wrap items-center gap-2">

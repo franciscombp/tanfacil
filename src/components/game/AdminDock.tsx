@@ -51,8 +51,12 @@ export function AdminDock({ game }: { game: Game }) {
     decisionLog,
   } = game
 
-  // Abierto por defecto: el facilitador necesita los controles a mano.
-  const [open, setOpen] = useState(() => sessionStorage.getItem(DOCK_KEY) !== 'closed')
+  /*
+   * Cerrado por defecto: esta pantalla es la que se proyecta, y el panel
+   * abierto tapaba la imagen y dos de las cuatro opciones. El facilitador lo
+   * abre cuando lo necesita y su elección se recuerda durante la sesión.
+   */
+  const [open, setOpen] = useState(() => sessionStorage.getItem(DOCK_KEY) === 'open')
   const [showDiagnostic, setShowDiagnostic] = useState(false)
   const toggle = () => {
     setOpen((value) => {
