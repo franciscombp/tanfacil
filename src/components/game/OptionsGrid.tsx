@@ -6,6 +6,9 @@ import {
   QuestionnaireQuestion,
 } from '@/components/ui/questionnaire'
 
+/** Se vota «la B» en voz alta: cada opción lleva su letra. */
+const LETTERS = ['A', 'B', 'C', 'D']
+
 /**
  * Las acciones, grandes y al frente. Los jugadores votan (y pueden cambiar el
  * voto mientras la votación siga abierta); el admin facilita y no vota. Las
@@ -87,14 +90,16 @@ export function OptionsGrid({ game }: { game: Game }) {
               key={option.id}
               value={option.id}
               disabled={!votable}
+              badge={LETTERS[index] ?? String(index + 1)}
+              spent={option.disabled}
               label={
                 <span className="flex flex-col gap-0.5">
-                  <span className="flex items-center gap-2">
-                    <span className={option.disabled ? 'line-through opacity-60' : ''}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className={option.disabled ? 'line-through' : ''}>
                       {option.label}
                     </span>
                     {myVote === option.id && !isAdmin && (
-                      <span className="shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
+                      <span className="shrink-0 animate-pop rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
                         Tu voto
                       </span>
                     )}
@@ -115,8 +120,8 @@ export function OptionsGrid({ game }: { game: Game }) {
               count={count}
               share={totalCount > 0 ? (count / totalCount) * 100 : 0}
               winner={revealed && winnerOptionId === option.id}
-              className="min-h-14 animate-fade-up p-3.5 text-[15px]"
-              style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'backwards' }}
+              className="min-h-16 animate-fade-up"
+              style={{ animationDelay: `${index * 70}ms`, animationFillMode: 'backwards' }}
             />
           )
         })}

@@ -24,10 +24,15 @@ export function VoteStatusBar({ game }: { game: Game }) {
           {shown.map((player) => (
             <span
               key={player.pid}
-              title={`${player.name}${player.vote ? ' · ya votó' : ' · pensando'}`}
+              title={`${player.name}${
+                player.absent ? ' · sin conexión' : player.vote ? ' · ya votó' : ' · pensando'
+              }`}
               className={[
-                'grid size-7 place-items-center rounded-full border-2 bg-secondary text-[11px] font-semibold uppercase text-secondary-foreground ring-1 ring-background',
-                player.vote ? 'border-emerald-500' : 'border-transparent opacity-60',
+                'grid size-8 place-items-center rounded-full border-2 bg-secondary text-xs font-semibold uppercase text-secondary-foreground ring-1 ring-background transition-all',
+                player.vote
+                  ? 'animate-pop border-emerald-500'
+                  : 'border-transparent opacity-50',
+                player.absent ? 'opacity-30 grayscale' : '',
                 player.pid === pid ? 'ring-2 ring-primary' : '',
               ].join(' ')}
             >
@@ -44,7 +49,7 @@ export function VoteStatusBar({ game }: { game: Game }) {
 
       <Progress value={progress} className="h-2 flex-1" />
 
-      <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+      <span className="shrink-0 text-base font-semibold tabular-nums text-foreground/80">
         {votedCount}/{totalCount}
       </span>
 
@@ -56,8 +61,10 @@ export function VoteStatusBar({ game }: { game: Game }) {
       {phase === 'voting' && voteSecondsLeft !== null && (
         <span
           className={[
-            'w-12 shrink-0 text-right font-mono text-sm tabular-nums',
-            voteSecondsLeft <= 10 ? 'text-destructive' : 'text-muted-foreground',
+            'w-14 shrink-0 text-right font-mono text-lg font-bold tabular-nums',
+            voteSecondsLeft <= 10
+              ? 'animate-urgent text-destructive'
+              : 'text-muted-foreground',
           ].join(' ')}
         >
           {voteSecondsLeft}s

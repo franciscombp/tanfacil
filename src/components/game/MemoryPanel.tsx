@@ -25,7 +25,7 @@ export function MemoryPanel({ game }: { game: Game }) {
           {memory.map((fact, index) => (
             <li
               key={fact.id}
-              className="animate-fade-up text-[13px] leading-snug"
+              className="animate-slide-in text-sm leading-snug"
               style={{ animationDelay: `${Math.min(index * 40, 200)}ms`, animationFillMode: 'backwards' }}
             >
               <span className="mr-1.5 text-muted-foreground">•</span>

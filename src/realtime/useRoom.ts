@@ -29,10 +29,54 @@ export interface RoomPresence {
   vote: string | null
   /** `sceneId#round` al que corresponde el voto. */
   voteKey: string
+  /** Se le perdió la pista hace poco: móvil en reposo, pestaña de fondo… */
+  absent?: boolean
 }
 
-const CONNECT_TIMEOUT_MS = 10000
+/**
+ * Cuánto se tarda en declarar «sin conexión» con la pestaña a la vista. Se
+ * espera de sobra: el grupo está conversando y una reconexión de unos
+ * segundos no debe alarmar a nadie. Con la pestaña en segundo plano no se
+ * declara nunca: ahí el navegador corta el socket a propósito.
+ */
+const OFFLINE_AFTER_MS = 60_000
+
+/**
+ * Gracia antes de dar por ido a alguien. Un móvil que se bloquea sale del
+ * canal enseguida; durante este margen sigue en la sala y su voto ya emitido
+ * se mantiene en el recuento.
+ */
+const ABSENT_GRACE_MS = 180_000
+
 const STATE_EVENT = 'state'
+
+/**
+ * Mezcla la presencia recibida con quienes se vieron hace poco. Un móvil que
+ * se bloquea o una pestaña que pasa a segundo plano salen del canal en
+ * segundos; sin esta gracia desaparecerían de la sala a mitad de la
+ * conversación y su voto dejaría de contar.
+ */
+function withGrace(
+  present: RoomPresence[],
+  lastSeen: Map<string, { member: RoomPresence; at: number }>
+): RoomPresence[] {
+  const now = Date.now()
+  for (const member of present) lastSeen.set(member.pid, { member, at: now })
+
+  const here = new Set(present.map((member) => member.pid))
+  const absent: RoomPresence[] = []
+
+  for (const [pid, entry] of lastSeen) {
+    if (here.has(pid)) continue
+    if (now - entry.at > ABSENT_GRACE_MS) {
+      lastSeen.delete(pid)
+      continue
+    }
+    absent.push({ ...entry.member, absent: true })
+  }
+
+  return [...present, ...absent]
+}
 
 interface UseRoomArgs {
   channelName: string
@@ -54,6 +98,8 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
 
   const channelRef = useRef<RealtimeChannel | null>(null)
   const subscribedRef = useRef(false)
+  /** Última vez que se vio a cada participante, para la gracia de ausencia. */
+  const lastSeenRef = useRef(new Map<string, { member: RoomPresence; at: number }>())
   const presenceRef = useRef(presence)
   presenceRef.current = presence
   const onStateRef = useRef(onState)
@@ -77,11 +123,13 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
   useEffect(() => {
     if (!isSupabaseConfigured) return
 
-    // Sólo se declara "sin conexión" si el corte dura; los cierres breves
-    // (pestaña en segundo plano, cambio de red) se muestran como reconexión.
+    // Sólo se declara "sin conexión" si el corte dura de verdad y la pestaña
+    // está a la vista: en segundo plano el navegador corta el socket aposta.
     const timeout = setTimeout(() => {
-      if (!subscribedRef.current) setStatus('offline')
-    }, CONNECT_TIMEOUT_MS)
+      if (!subscribedRef.current && document.visibilityState === 'visible') {
+        setStatus('offline')
+      }
+    }, OFFLINE_AFTER_MS)
 
     // Espera creciente entre reintentos, hasta 30 s.
     const backoff = Math.min(30_000, 2000 * 2 ** Math.min(retry, 4))
@@ -121,7 +169,7 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
             vote: vote ?? null,
             voteKey: voteKey ?? '',
           }))
-        setMembers(list)
+        setMembers(withGrace(list, lastSeenRef.current))
       })
       .on('broadcast', { event: STATE_EVENT }, ({ payload }) => {
         if (payload) onStateRef.current(payload as GameState)
@@ -146,25 +194,36 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
           subscribedRef.current = false
           // Un corte no es "sin conexión" todavía: se intenta volver a entrar.
           setStatus((current) => (current === 'offline' ? current : 'connecting'))
-          scheduleRejoin(subscription)
+          if (document.visibilityState === 'visible') scheduleRejoin(subscription)
         }
       })
 
-    // Al volver a la pestaña o recuperar la red, reconectar sin esperar.
-    const onVisible = () => {
-      if (document.visibilityState === 'visible' && !subscribedRef.current) {
-        setRetry((value) => value + 1)
+    /**
+     * Al volver a la pestaña, recuperar la red o restaurar la página desde la
+     * caché del navegador (típico al despertar un móvil), se reconecta sin
+     * esperar al backoff y se vuelve a publicar la presencia.
+     */
+    const onWake = () => {
+      if (document.visibilityState !== 'visible') return
+      if (subscribedRef.current) {
+        track()
+        return
       }
+      setRetry((value) => value + 1)
     }
-    document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener('online', onVisible)
+    document.addEventListener('visibilitychange', onWake)
+    window.addEventListener('online', onWake)
+    window.addEventListener('focus', onWake)
+    window.addEventListener('pageshow', onWake)
 
     return () => {
       disposed = true
       clearTimeout(timeout)
       if (rejoin) clearTimeout(rejoin)
-      document.removeEventListener('visibilitychange', onVisible)
-      window.removeEventListener('online', onVisible)
+      document.removeEventListener('visibilitychange', onWake)
+      window.removeEventListener('online', onWake)
+      window.removeEventListener('focus', onWake)
+      window.removeEventListener('pageshow', onWake)
       subscribedRef.current = false
       channelRef.current = null
       void supabase.removeChannel(channel)
@@ -182,9 +241,53 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
    * canal para que ni el socket ni el proyecto se den por inactivos.
    */
   useEffect(() => {
-    const timer = setInterval(track, 30_000)
+    const timer = setInterval(track, 20_000)
     return () => clearInterval(timer)
   }, [track])
+
+  // Los ausentes caducan solos aunque no lleguen más eventos de presencia.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMembers((current) => {
+        const present = current.filter((member) => !member.absent)
+        const merged = withGrace(present, lastSeenRef.current)
+        return merged.length === current.length ? current : merged
+      })
+    }, 15_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  /**
+   * Mientras la pantalla está a la vista se pide no dormir: en el móvil el
+   * bloqueo automático corta el socket justo cuando el grupo está debatiendo.
+   */
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> }
+    }
+    if (!nav.wakeLock) return
+
+    let sentinel: { release: () => Promise<void> } | null = null
+    let cancelled = false
+
+    const acquire = async () => {
+      if (cancelled || document.visibilityState !== 'visible') return
+      try {
+        sentinel = await nav.wakeLock!.request('screen')
+      } catch {
+        // El navegador puede negarlo (batería baja, permisos): no es crítico.
+      }
+    }
+
+    void acquire()
+    document.addEventListener('visibilitychange', acquire)
+
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', acquire)
+      void sentinel?.release().catch(() => {})
+    }
+  }, [])
 
   return { members, status, connectedAt, sendState, publishPresence: track }
 }

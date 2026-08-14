@@ -167,6 +167,51 @@ export function resolveVote(
   }
 }
 
+/** Lo que el recuento necesita saber de cada jugador. */
+export interface Voter {
+  vote: string | null
+  voteKey: string
+  /** Sin señales hace un rato: móvil bloqueado, pestaña de fondo… */
+  absent?: boolean
+}
+
+export interface RoundTally<T extends Voter> {
+  /** A quién se tiene en cuenta esta ronda. */
+  counted: T[]
+  /** De ésos, quiénes faltan por votar. */
+  pending: T[]
+  votes: string[]
+  votedCount: number
+  totalCount: number
+  everyoneVoted: boolean
+}
+
+/**
+ * Quién cuenta en esta ronda.
+ *
+ * Quien lleva un rato sin dar señales no bloquea la votación —el grupo no
+ * puede quedarse esperando a un móvil bloqueado—, pero si ya había votado su
+ * voto sigue contando: se marchó después de decidir. Y quien todavía no ha
+ * recibido el cambio de escena figura como pendiente, para no cerrar con un
+ * recuento a medias.
+ */
+export function countRound<T extends Voter>(players: T[], voteKey: string): RoundTally<T> {
+  const votedThisRound = (player: T) => player.voteKey === voteKey && Boolean(player.vote)
+
+  const counted = players.filter((player) => !player.absent || votedThisRound(player))
+  const pending = counted.filter((player) => !votedThisRound(player))
+  const votes = counted.filter(votedThisRound).map((player) => player.vote as string)
+
+  return {
+    counted,
+    pending,
+    votes,
+    votedCount: votes.length,
+    totalCount: counted.length,
+    everyoneVoted: counted.length > 0 && pending.length === 0,
+  }
+}
+
 /**
  * Margen de confirmación al completarse los votos. Da tiempo a que llegue la
  * presencia de alguien que aún no aparecía, para no cerrar con un recuento

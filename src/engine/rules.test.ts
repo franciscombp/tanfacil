@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyOption,
+  countRound,
   forceOption,
   initialState,
   jumpToScene,
@@ -274,6 +275,59 @@ describe('reconciliación entre anfitriones', () => {
 
   it('el mismo emisor no se adopta a sí mismo', () => {
     expect(shouldAdopt(base(), base())).toBe(false)
+  })
+})
+
+describe('recuento de la ronda', () => {
+  const KEY = 'inicio#0'
+  const player = (over = {}) => ({ vote: null, voteKey: KEY, ...over })
+
+  it('quien no ha votado bloquea el cierre', () => {
+    const round = countRound([player({ vote: 'actuar' }), player()], KEY)
+    expect(round.votedCount).toBe(1)
+    expect(round.totalCount).toBe(2)
+    expect(round.everyoneVoted).toBe(false)
+  })
+
+  it('quien aún está en la ronda anterior figura como pendiente', () => {
+    // No ha recibido el cambio de escena: cerrar ahora dejaría su voto fuera.
+    const round = countRound(
+      [player({ vote: 'actuar' }), player({ vote: 'preguntar', voteKey: 'inicio#0-vieja' })],
+      KEY
+    )
+    expect(round.everyoneVoted).toBe(false)
+    expect(round.pending).toHaveLength(1)
+  })
+
+  it('un ausente sin voto no bloquea al grupo', () => {
+    // Móvil bloqueado a mitad de la conversación: la sala sigue.
+    const round = countRound([player({ vote: 'actuar' }), player({ absent: true })], KEY)
+    expect(round.totalCount).toBe(1)
+    expect(round.everyoneVoted).toBe(true)
+  })
+
+  it('un ausente que ya había votado conserva su voto', () => {
+    const round = countRound(
+      [player({ vote: 'actuar' }), player({ vote: 'preguntar', absent: true })],
+      KEY
+    )
+    expect(round.totalCount).toBe(2)
+    expect(round.votes.sort()).toEqual(['actuar', 'preguntar'])
+    expect(round.everyoneVoted).toBe(true)
+  })
+
+  it('sin nadie a quien esperar no se cierra sola', () => {
+    expect(countRound([], KEY).everyoneVoted).toBe(false)
+    expect(countRound([player({ absent: true })], KEY).everyoneVoted).toBe(false)
+  })
+
+  it('una ronda nueva empieza con cero votos aunque la clave cambie sola', () => {
+    // Es la invariante del desempate: los votos de la ronda anterior no
+    // cuentan en la siguiente, así la segunda votación se vota de verdad.
+    const previos = [player({ vote: 'actuar' }), player({ vote: 'preguntar' })]
+    const round = countRound(previos, 'inicio#1')
+    expect(round.votedCount).toBe(0)
+    expect(round.everyoneVoted).toBe(false)
   })
 })
 

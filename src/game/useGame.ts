@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   applyOption,
+  countRound,
   forceOption,
   initialState,
   jumpToScene,
@@ -186,22 +187,16 @@ export function useGame(displayName: string, role: RoomRole) {
   )
 
   /**
-   * Cambio de escena → el voto se limpia. Cambio de RONDA en la misma escena
-   * → el voto se CONSERVA re-atándolo a la ronda nueva. Sin esto, un voto
-   * emitido justo cuando el anfitrión cerraba la ronda llegaba tarde, la
-   * ronda se repetía "sin votos" y el voto del jugador desaparecía en
-   * silencio: el clásico «voté y no se marcó».
+   * Toda ronda nueva empieza sin voto: cambio de escena o desempate.
+   *
+   * Conservar el voto en un desempate parecía cómodo, pero dejaba la ronda
+   * cerrada antes de empezar (todos figuraban como votados), se resolvía sola
+   * con el mismo empate y volvía a repetirse en bucle. Una segunda votación
+   * sólo tiene sentido si de verdad se vuelve a votar.
    */
   useEffect(() => {
-    setMyVoteEntry((current) => {
-      if (!current || current.key === voteKey) return current
-      const previousScene = current.key.split('#')[0]
-      if (previousScene !== state.sceneId) return null
-      // En un desempate sólo sobreviven los votos a opciones empatadas.
-      if (state.tiedOptions && !state.tiedOptions.includes(current.optionId)) return null
-      return { key: voteKey, optionId: current.optionId }
-    })
-  }, [voteKey, state.sceneId, state.tiedOptions])
+    setMyVoteEntry((current) => (current && current.key !== voteKey ? null : current))
+  }, [voteKey])
 
   const scene = story.scenes[state.sceneId] ?? null
 
@@ -216,13 +211,11 @@ export function useGame(displayName: string, role: RoomRole) {
     () => roster.filter((member) => member.role === 'player'),
     [roster]
   )
-  const currentVotes = useMemo(
-    () =>
-      players
-        .filter((player) => player.voteKey === voteKey && player.vote)
-        .map((player) => player.vote as string),
-    [players, voteKey]
-  )
+  /** Recuento de la ronda: ausentes, pendientes y votos válidos. */
+  const round = useMemo(() => countRound(players, voteKey), [players, voteKey])
+  const { pending: pendingPlayers, votes: currentVotes, votedCount, totalCount, everyoneVoted } =
+    round
+
 
   const voteCounts = useMemo(
     () => (scene ? tally(story, state, scene, currentVotes) : {}),
@@ -232,18 +225,6 @@ export function useGame(displayName: string, role: RoomRole) {
     () => (scene ? leadersOf(scene, voteCounts) : []),
     [scene, voteCounts]
   )
-
-  const votedCount = currentVotes.length
-  const totalCount = players.length
-  const pendingPlayers = players.filter(
-    (player) => !(player.voteKey === voteKey && player.vote)
-  )
-  /**
-   * Sólo cuenta como completa si TODOS los presentes están en esta misma
-   * ronda y han votado. Quien aún no ha recibido el cambio de escena figura
-   * como pendiente, así no se cierra con un recuento a medias.
-   */
-  const everyoneVoted = totalCount > 0 && pendingPlayers.length === 0
 
   /**
    * Sala de espera: sólo existe si hay facilitador conectado. Evita que el

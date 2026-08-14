@@ -59,11 +59,30 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.55' },
         },
+        // Confirmación de una acción: un rebote corto, sin aspavientos.
+        pop: {
+          '0%': { transform: 'scale(0.8)', opacity: '0' },
+          '60%': { transform: 'scale(1.06)', opacity: '1' },
+          '100%': { transform: 'scale(1)' },
+        },
+        // Un hecho nuevo entrando en la memoria.
+        'slide-in': {
+          from: { opacity: '0', transform: 'translateX(-6px)' },
+          to: { opacity: '1', transform: 'translateX(0)' },
+        },
+        // Urgencia al quedar pocos segundos.
+        urgent: {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.12)' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.35s ease-out',
         curtain: 'curtain 0.9s ease-in-out forwards',
         'pulse-soft': 'pulse-soft 1.4s ease-in-out infinite',
+        pop: 'pop 0.28s ease-out',
+        'slide-in': 'slide-in 0.3s ease-out',
+        urgent: 'urgent 1s ease-in-out infinite',
       },
     },
   },

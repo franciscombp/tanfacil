@@ -1,6 +1,6 @@
 import * as React from 'react'
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
-import { Check, Circle } from 'lucide-react'
+import { Check } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -25,10 +25,8 @@ const QuestionnaireQuestion = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { description?: React.ReactNode }
 >(({ className, children, description, ...props }, ref) => (
-  <div ref={ref} className={cn('space-y-1', className)} {...props}>
-    <h2 className="text-base font-semibold leading-none tracking-tight">
-      {children}
-    </h2>
+  <div ref={ref} className={cn('space-y-0.5', className)} {...props}>
+    <h2 className="text-lg font-semibold leading-none tracking-tight">{children}</h2>
     {description ? (
       <p className="text-sm text-muted-foreground">{description}</p>
     ) : null}
@@ -42,7 +40,7 @@ const QuestionnaireOptions = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadioGroupPrimitive.Root
     ref={ref}
-    className={cn('grid gap-2 sm:grid-cols-2', className)}
+    className={cn('grid gap-3 sm:grid-cols-2', className)}
     {...props}
   />
 ))
@@ -51,12 +49,16 @@ QuestionnaireOptions.displayName = 'QuestionnaireOptions'
 export interface QuestionnaireOptionProps
   extends React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item> {
   label: React.ReactNode
+  /** Letra que identifica la opción: se vota «la B» en voz alta. */
+  badge?: string
   /** Muestra el recuento de votos y la barra de resultado. */
   revealed?: boolean
   count?: number
   /** Porcentaje 0-100 usado por la barra de resultado. */
   share?: number
   winner?: boolean
+  /** Ya se intentó este camino: se apaga con claridad, sin desaparecer. */
+  spent?: boolean
 }
 
 const QuestionnaireOption = React.forwardRef<
@@ -64,17 +66,21 @@ const QuestionnaireOption = React.forwardRef<
   QuestionnaireOptionProps
 >(
   (
-    { className, label, revealed, count = 0, share = 0, winner, ...props },
+    { className, label, badge, revealed, count = 0, share = 0, winner, spent, ...props },
     ref
   ) => (
     <RadioGroupPrimitive.Item
       ref={ref}
       className={cn(
-        'group relative flex w-full items-center gap-3 overflow-hidden rounded-md border border-input bg-card p-4 text-left transition-colors',
-        'hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-        'disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-card',
-        'data-[state=checked]:border-primary data-[state=checked]:bg-accent',
-        winner && 'border-primary ring-1 ring-primary',
+        'group relative flex w-full items-center gap-3 overflow-hidden rounded-xl border-2 border-input bg-card p-4 text-left transition-all duration-150',
+        'hover:-translate-y-0.5 hover:border-primary/60 hover:bg-accent hover:shadow-lg hover:shadow-primary/5',
+        'active:translate-y-0 active:scale-[0.99]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'disabled:pointer-events-none',
+        // Desactivada por "ya intentado": se apaga de verdad, pero se lee.
+        spent ? 'opacity-35 saturate-50' : 'disabled:opacity-45',
+        'data-[state=checked]:border-primary data-[state=checked]:bg-primary/10 data-[state=checked]:shadow-lg data-[state=checked]:shadow-primary/10',
+        winner && 'border-primary ring-2 ring-primary/40',
         className
       )}
       {...props}
@@ -83,29 +89,39 @@ const QuestionnaireOption = React.forwardRef<
       {revealed ? (
         <span
           aria-hidden
-          className="absolute inset-y-0 left-0 bg-primary/10 transition-all duration-700"
+          className="absolute inset-y-0 left-0 bg-primary/15 transition-all duration-700 ease-out"
           style={{ width: `${share}%` }}
         />
       ) : null}
 
-      <span
-        className={cn(
-          'relative flex size-5 shrink-0 items-center justify-center rounded-full border border-primary text-primary',
-          'group-data-[state=checked]:bg-primary group-data-[state=checked]:text-primary-foreground'
-        )}
-      >
-        <RadioGroupPrimitive.Indicator>
-          <Check className="size-3.5" strokeWidth={3} />
-        </RadioGroupPrimitive.Indicator>
-      </span>
+      {badge ? (
+        <span
+          aria-hidden
+          className={cn(
+            'relative grid size-9 shrink-0 place-items-center rounded-lg border-2 border-input bg-secondary text-base font-bold text-secondary-foreground transition-colors',
+            'group-hover:border-primary/60',
+            'group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary group-data-[state=checked]:text-primary-foreground'
+          )}
+        >
+          <span className="group-data-[state=checked]:hidden">{badge}</span>
+          <Check
+            className="hidden size-5 animate-pop group-data-[state=checked]:block"
+            strokeWidth={3}
+          />
+        </span>
+      ) : null}
 
-      <span className="relative flex-1 text-sm font-medium leading-snug">
+      <span className="relative flex-1 text-[15px] font-medium leading-snug sm:text-base">
         {label}
       </span>
 
       {revealed ? (
-        <span className="relative flex items-center gap-1.5 text-sm tabular-nums text-muted-foreground">
-          {winner ? <Circle className="size-2 fill-primary text-primary" /> : null}
+        <span
+          className={cn(
+            'relative min-w-8 animate-pop text-right text-xl font-bold tabular-nums',
+            winner ? 'text-primary' : 'text-muted-foreground'
+          )}
+        >
           {count}
         </span>
       ) : null}
