@@ -78,7 +78,9 @@ export function AdminDock({ game }: { game: Game }) {
   })
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 flex max-h-[82vh] flex-col items-end gap-2">
+    // A la izquierda: la columna derecha es donde viven las opciones y el
+    // estado de la votación, que el facilitador necesita ver mientras modera.
+    <div className="fixed bottom-4 left-4 z-40 flex max-h-[82vh] flex-col items-start gap-2">
       {open && (
         <div className="w-80 animate-fade-up overflow-y-auto rounded-lg border bg-card p-3 shadow-xl">
           {tie && (

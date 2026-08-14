@@ -117,7 +117,7 @@ export function useGame(displayName: string, role: RoomRole) {
     }
   }, [])
 
-  const { members, status, connectedAt, sendState } = useRoom({
+  const { members, status, connectedAt, sendState, publishPresence } = useRoom({
     channelName: ROOM,
     pid,
     presence,
@@ -125,11 +125,30 @@ export function useGame(displayName: string, role: RoomRole) {
   })
   sendStateRef.current = sendState
 
-  /** Uno siempre se ve en la sala, aunque la presencia tarde en sincronizar. */
-  const roster = useMemo<RoomPresence[]>(() => {
-    if (members.some((member) => member.pid === pid)) return members
-    return [...members, presence]
-  }, [members, pid, presence])
+  /**
+   * La entrada propia siempre sale del estado local, nunca del eco del
+   * servidor: uno conoce su voto antes que nadie. Sin esto, entre el clic y
+   * la vuelta de la presencia el recuento seguía diciendo «falta votar», y si
+   * esa publicación se perdía se quedaba así indefinidamente.
+   */
+  const roster = useMemo<RoomPresence[]>(
+    () => [...members.filter((member) => member.pid !== pid), presence],
+    [members, pid, presence]
+  )
+
+  /**
+   * Vigilante de publicación: si el eco del servidor no refleja lo que
+   * publiqué, lo reenvío. Cubre los `track` que se pierden en una
+   * reconexión, que es lo que hacía que los demás no vieran mi voto.
+   */
+  const echoedVote = members.find((member) => member.pid === pid)?.vote ?? null
+  const echoedKey = members.find((member) => member.pid === pid)?.voteKey ?? ''
+  useEffect(() => {
+    if (status !== 'connected') return
+    if (echoedVote === publishedVote && echoedKey === voteKey) return
+    const timer = setTimeout(publishPresence, 1200)
+    return () => clearTimeout(timer)
+  }, [status, echoedVote, publishedVote, echoedKey, voteKey, publishPresence])
 
   const host = useMemo(() => pickHost(roster), [roster])
   const isHost = host?.pid === pid

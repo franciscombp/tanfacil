@@ -80,8 +80,15 @@ export function OptionsGrid({ game }: { game: Game }) {
               disabled={!votable}
               label={
                 <span className="flex flex-col gap-0.5">
-                  <span className={option.disabled ? 'line-through opacity-60' : ''}>
-                    {option.label}
+                  <span className="flex items-center gap-2">
+                    <span className={option.disabled ? 'line-through opacity-60' : ''}>
+                      {option.label}
+                    </span>
+                    {myVote === option.id && !isAdmin && (
+                      <span className="shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
+                        Tu voto
+                      </span>
+                    )}
                   </span>
                   {option.disabled && (
                     <span className="text-xs font-normal text-muted-foreground">

@@ -186,5 +186,5 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
     return () => clearInterval(timer)
   }, [track])
 
-  return { members, status, connectedAt, sendState }
+  return { members, status, connectedAt, sendState, publishPresence: track }
 }
