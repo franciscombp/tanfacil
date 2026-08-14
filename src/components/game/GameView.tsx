@@ -12,6 +12,7 @@ import { OptionsGrid } from './OptionsGrid'
 import { VoteStatusBar } from './VoteStatusBar'
 import { MemoryPanel } from './MemoryPanel'
 import { SummaryPanel } from './SummaryPanel'
+import { WaitingRoom } from './WaitingRoom'
 import { AdminDock } from './AdminDock'
 
 /**
@@ -31,7 +32,7 @@ export function GameView({
   onExit: () => void
 }) {
   const game = useGame(name, role)
-  const { story, scene, status, admin, elapsedSeconds, pastDeadline } = game
+  const { story, scene, status, admin, waiting, elapsedSeconds, pastDeadline } = game
 
   // No recargar por actualización mientras se está jugando.
   useEffect(() => {
@@ -104,16 +105,24 @@ export function GameView({
 
       {/* BARRA SUPERIOR, mínima */}
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
-        <Badge
-          variant="secondary"
-          className="font-mono"
-          title="La hora de la historia. Pasar de las 12:00 no penaliza nada."
-        >
-          <Clock3 /> {storyClock(story, elapsedSeconds)}
-        </Badge>
-        <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-          {pastDeadline ? 'Son más de las 12:00 y el jefe no aparece' : story.premise}
-        </span>
+        {waiting ? (
+          <Badge variant="outline" className="uppercase tracking-wide">
+            Sala de espera
+          </Badge>
+        ) : (
+          <>
+            <Badge
+              variant="secondary"
+              className="font-mono"
+              title="La hora de la historia. Pasar de las 12:00 no penaliza nada."
+            >
+              <Clock3 /> {storyClock(story, elapsedSeconds)}
+            </Badge>
+            <span className="hidden truncate text-xs text-muted-foreground sm:inline">
+              {pastDeadline ? 'Son más de las 12:00 y el jefe no aparece' : story.premise}
+            </span>
+          </>
+        )}
 
         <div className="ml-auto flex items-center gap-2">
           <span
@@ -162,6 +171,9 @@ export function GameView({
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--muted))_0%,hsl(var(--background))_65%)]"
         />
+        {waiting ? (
+          <WaitingRoom game={game} />
+        ) : (
         <div className="relative mx-auto grid min-h-full w-full max-w-7xl gap-5 px-4 py-5 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,25rem)] lg:items-start">
           <div className="flex min-w-0 flex-col items-center gap-3">
             <Stage scene={scene} />
@@ -178,6 +190,7 @@ export function GameView({
             <MemoryPanel game={game} />
           </div>
         </div>
+        )}
       </main>
 
       {role === 'admin' && <AdminDock game={game} />}

@@ -232,9 +232,16 @@ export function useGame(displayName: string, role: RoomRole) {
   )
   const everyoneVoted = totalCount > 0 && votedCount === totalCount
 
+  /**
+   * Sala de espera: sólo existe si hay facilitador conectado. Evita que el
+   * grupo empiece a contestar antes de tiempo. Sin facilitador la partida
+   * corre normal (probar en solitario no requiere sala).
+   */
+  const waiting = Boolean(admin) && !state.started
+
   // ─── Motor: sólo lo ejecuta el anfitrión ─────────────────────────────────
   useEffect(() => {
-    if (!isHost || !engineReady || !scene) return
+    if (!isHost || !engineReady || !scene || waiting) return
 
     if (state.phase === 'voting') {
       const next = tickVoting(story, state, scene, {
@@ -255,6 +262,7 @@ export function useGame(displayName: string, role: RoomRole) {
     isHost,
     engineReady,
     scene,
+    waiting,
     state,
     votedCount,
     everyoneVoted,
@@ -343,6 +351,13 @@ export function useGame(displayName: string, role: RoomRole) {
     [canModerate, commit]
   )
 
+  /** Abre la partida a todos. El cronómetro real empieza aquí. */
+  const startGame = useCallback(() => {
+    if (!canModerate) return
+    commit({ ...initialState(story, Date.now()), started: true })
+  }, [canModerate, commit])
+
+  /** Devuelve a todos a la sala de espera y deja la partida en cero. */
   const restart = useCallback(() => {
     if (!canModerate) return
     commit(initialState(story, Date.now()))
@@ -410,6 +425,8 @@ export function useGame(displayName: string, role: RoomRole) {
     totalCount,
     leaders,
     winnerOptionId: state.winner,
+    waiting,
+    startGame,
     vote,
     decide,
     closeVoteNow,

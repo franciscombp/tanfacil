@@ -147,7 +147,7 @@ describe('el contador arranca con el primer voto', () => {
     expect(closed?.winner).toBe('preguntar')
   })
 
-  it('jugando solo se avanza sin espera: ni contador ni revelado', () => {
+  it('jugando solo el revelado es corto pero existe: hay que ver qué se eligió', () => {
     const solo = tickVoting(story, state(), scene, {
       votedCount: 1,
       everyoneVoted: true,
@@ -155,10 +155,22 @@ describe('el contador arranca con el primer voto', () => {
       voteCounts: { preguntar: 1 },
       now: NOW,
     })
-    // Ya está en la escena siguiente, no en fase de revelado.
-    expect(solo?.phase).toBe('voting')
-    expect(solo?.sceneId).toBe('sala')
-    expect(solo?.deadline).toBe(0)
+    expect(solo?.phase).toBe('reveal')
+    expect(solo?.winner).toBe('preguntar')
+    expect(solo?.deadline).toBe(NOW + story.timers.soloRevealSeconds * 1000)
+    // Sigue en la escena actual: aún no ha cambiado de diapositiva.
+    expect(solo?.sceneId).toBe('inicio')
+  })
+
+  it('en grupo el revelado dura lo normal', () => {
+    const group = tickVoting(story, state(), scene, {
+      votedCount: 3,
+      everyoneVoted: true,
+      leaders: [scene.options[0]],
+      voteCounts: { actuar: 3 },
+      now: NOW,
+    })
+    expect(group?.deadline).toBe(NOW + story.timers.revealSeconds * 1000)
   })
 
   it('en pausa no ocurre nada, aunque haya votos', () => {
@@ -173,6 +185,23 @@ describe('el contador arranca con el primer voto', () => {
     expect(repeated.deadline).toBe(0)
     const tied = resolveVote(story, state(), scene.options.slice(0, 2), NOW)
     expect(tied.deadline).toBe(0)
+  })
+})
+
+describe('sala de espera', () => {
+  it('la partida nace sin arrancar: con facilitador, la sala espera', () => {
+    expect(state().started).toBe(false)
+  })
+
+  it('cualquier decisión aplicada marca la partida como iniciada', () => {
+    // Así, si el facilitador entra a mitad de camino, no devuelve a todos
+    // a la sala de espera.
+    const next = applyOption(story, state(), scene, 'preguntar', {}, NOW)
+    expect(next.started).toBe(true)
+  })
+
+  it('un salto de escena del facilitador también la inicia', () => {
+    expect(jumpToScene(story, state(), 'sala', NOW).started).toBe(true)
   })
 })
 

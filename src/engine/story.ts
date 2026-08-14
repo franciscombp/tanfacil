@@ -45,6 +45,7 @@ interface RawStory {
 const DEFAULT_TIMERS: StoryTimers = {
   voteSeconds: 30,
   revealSeconds: 5,
+  soloRevealSeconds: 3,
 }
 
 const SCENE_TYPES: SceneType[] = ['scene', 'detour', 'convergence', 'ending']

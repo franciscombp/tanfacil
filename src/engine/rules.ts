@@ -16,6 +16,7 @@ import { DecisionLog, GameState, Scene, SceneOption, Story } from './types'
 export function initialState(story: Story, now: number): GameState {
   const start = story.scenes[story.startScene]
   return {
+    started: false,
     sceneId: story.startScene,
     round: 0,
     phase: 'voting',
@@ -103,16 +104,19 @@ export function resolveVote(
   story: Story,
   state: GameState,
   leaders: SceneOption[],
-  now: number
+  now: number,
+  voterCount = Infinity
 ): GameState {
   if (leaders.length === 1) {
+    const seconds =
+      voterCount <= 1 ? story.timers.soloRevealSeconds : story.timers.revealSeconds
     return {
       ...state,
       phase: 'reveal',
       winner: leaders[0].id,
       repeatReason: null,
       forced: false,
-      deadline: now + story.timers.revealSeconds * 1000,
+      deadline: now + seconds * 1000,
     }
   }
 
@@ -157,23 +161,20 @@ export interface VotingSnapshot {
  *   deben decidir.
  * - Si votan todos, la votación se cierra en el acto.
  * - Si se agota el tiempo sin que voten todos, se cierra igual.
- * - Con un solo votante no hay recuento que mostrar: se avanza sin espera.
+ * - Con un solo votante el revelado es más corto, pero siempre se muestra:
+ *   hay que poder ver qué se eligió antes de cambiar de escena.
  */
 export function tickVoting(
   story: Story,
   state: GameState,
   scene: Scene,
-  { votedCount, everyoneVoted, leaders, voteCounts, now }: VotingSnapshot
+  { votedCount, everyoneVoted, leaders, now }: VotingSnapshot
 ): GameState | null {
   if (state.phase !== 'voting' || state.paused) return null
   if (scene.options.length === 0) return null
 
   if (everyoneVoted) {
-    const resolved = resolveVote(story, state, leaders, now)
-    if (votedCount <= 1 && resolved.phase === 'reveal' && resolved.winner) {
-      return applyOption(story, resolved, scene, resolved.winner, voteCounts, now)
-    }
-    return resolved
+    return resolveVote(story, state, leaders, now, votedCount)
   }
 
   if (votedCount > 0 && state.deadline === 0) {
@@ -245,6 +246,7 @@ export function applyOption(
 
   return {
     ...state,
+    started: true,
     sceneId: option.next,
     round: 0,
     phase: 'voting',
@@ -278,6 +280,7 @@ export function jumpToScene(
   if (!scene) return state
   return {
     ...state,
+    started: true,
     sceneId,
     round: 0,
     phase: 'voting',

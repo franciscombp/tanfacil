@@ -8,6 +8,8 @@ export interface StoryTimers {
   voteSeconds: number
   /** Segundos mostrando el resultado antes de aplicarlo. */
   revealSeconds: number
+  /** Revelado más corto cuando sólo hay un votante (facilitador probando). */
+  soloRevealSeconds: number
 }
 
 export type SceneType = 'scene' | 'detour' | 'convergence' | 'ending'
@@ -84,6 +86,11 @@ export interface DecisionLog {
 
 /** Estado de la partida: lo publica el anfitrión y el resto lo replica. */
 export interface GameState {
+  /**
+   * La partida ya arrancó. Con facilitador conectado, la sala espera a que
+   * él la inicie: así nadie contesta antes de tiempo y arruina la sesión.
+   */
+  started: boolean
   sceneId: string
   /** Ronda de votación dentro de la escena; sube al repetirse. */
   round: number
