@@ -28,6 +28,7 @@ export function OptionsGrid({ game }: { game: Game }) {
     pendingPlayers,
     winnerOptionId,
     voteSecondsLeft,
+    voteSeconds,
   } = game
 
   if (!scene || scene.type === 'ending') return null
@@ -43,6 +44,9 @@ export function OptionsGrid({ game }: { game: Game }) {
         ? `Faltan: ${pendingNames.join(', ')}`
         : `Faltan ${pendingNames.length} por votar`
 
+  // Sin contador todavía: nadie ha votado y el grupo está conversando.
+  const talking = voteSecondsLeft === null
+
   const description = revealed
     ? `Decidido: «${scene.options.find((o) => o.id === winnerOptionId)?.label}»`
     : paused
@@ -50,13 +54,17 @@ export function OptionsGrid({ game }: { game: Game }) {
       : tiedOptions
         ? 'Empate. Segunda votación entre las opciones empatadas.'
         : isAdmin
-          ? 'El grupo delibera y vota. Tú facilitas.'
+          ? talking
+            ? 'El grupo conversa. El contador arranca con el primer voto.'
+            : 'Votación en marcha. Tú facilitas.'
           : myVote
             ? pendingLabel ||
               `Voto registrado. Se cierra en ${voteSecondsLeft ?? 0}s y puedes cambiarlo.`
             : repeatReason === 'no_votes'
-              ? 'El tiempo terminó sin votos: se repite la votación.'
-              : 'Conversen y voten. El voto se puede cambiar hasta el cierre.'
+              ? 'La votación se cerró sin votos: vuelvan a votar.'
+              : talking
+                ? `Conversen sin prisa. En cuanto alguien vote, empiezan ${voteSeconds} segundos para todos.`
+                : `Quedan ${voteSecondsLeft}s. Elijan una opción.`
 
   return (
     <Questionnaire className="w-full">

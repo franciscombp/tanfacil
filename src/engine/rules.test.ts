@@ -7,6 +7,7 @@ import {
   leadersOf,
   optionViews,
   resolveVote,
+  tickVoting,
   tally,
 } from './rules'
 import { buildStory } from './story'
@@ -95,6 +96,83 @@ describe('votación', () => {
     expect(next.phase).toBe('voting')
     expect(next.repeatReason).toBe('no_votes')
     expect(next.ties).toBe(0)
+  })
+})
+
+describe('el contador arranca con el primer voto', () => {
+  const snapshot = (over: Partial<Parameters<typeof tickVoting>[3]> = {}) => ({
+    votedCount: 0,
+    everyoneVoted: false,
+    leaders: [],
+    voteCounts: {},
+    now: NOW,
+    ...over,
+  })
+
+  it('la escena se abre sin contador: hay tiempo de conversar', () => {
+    expect(state().deadline).toBe(0)
+    expect(tickVoting(story, state(), scene, snapshot())).toBeNull()
+  })
+
+  it('el primer voto arranca los segundos para todos', () => {
+    const armed = tickVoting(story, state(), scene, snapshot({ votedCount: 1 }))
+    expect(armed?.deadline).toBe(NOW + story.timers.voteSeconds * 1000)
+    expect(armed?.phase).toBe('voting')
+  })
+
+  it('con dos votantes, si votan todos se cierra en el acto', () => {
+    const armed = tickVoting(story, state(), scene, snapshot({ votedCount: 1 }))!
+    const closed = tickVoting(story, armed, scene, {
+      votedCount: 2,
+      everyoneVoted: true,
+      leaders: [scene.options[0]],
+      voteCounts: { actuar: 2 },
+      now: NOW + 3000,
+    })
+    expect(closed?.phase).toBe('reveal')
+    expect(closed?.winner).toBe('actuar')
+  })
+
+  it('si se agota el tiempo sin que voten todos, se cierra igual', () => {
+    const armed = tickVoting(story, state(), scene, snapshot({ votedCount: 1 }))!
+    const late = NOW + story.timers.voteSeconds * 1000 + 1
+    const closed = tickVoting(story, armed, scene, {
+      votedCount: 1,
+      everyoneVoted: false,
+      leaders: [scene.options[1]],
+      voteCounts: { preguntar: 1 },
+      now: late,
+    })
+    expect(closed?.phase).toBe('reveal')
+    expect(closed?.winner).toBe('preguntar')
+  })
+
+  it('jugando solo se avanza sin espera: ni contador ni revelado', () => {
+    const solo = tickVoting(story, state(), scene, {
+      votedCount: 1,
+      everyoneVoted: true,
+      leaders: [scene.options[1]],
+      voteCounts: { preguntar: 1 },
+      now: NOW,
+    })
+    // Ya está en la escena siguiente, no en fase de revelado.
+    expect(solo?.phase).toBe('voting')
+    expect(solo?.sceneId).toBe('sala')
+    expect(solo?.deadline).toBe(0)
+  })
+
+  it('en pausa no ocurre nada, aunque haya votos', () => {
+    const paused = { ...state(), paused: true }
+    expect(
+      tickVoting(story, paused, scene, snapshot({ votedCount: 2, everyoneVoted: true }))
+    ).toBeNull()
+  })
+
+  it('tras una repetición vuelve el tiempo de conversación', () => {
+    const repeated = resolveVote(story, state(), [], NOW)
+    expect(repeated.deadline).toBe(0)
+    const tied = resolveVote(story, state(), scene.options.slice(0, 2), NOW)
+    expect(tied.deadline).toBe(0)
   })
 })
 

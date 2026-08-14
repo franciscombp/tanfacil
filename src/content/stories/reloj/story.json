@@ -7,11 +7,10 @@
   },
   "timers": {
     "voteSeconds": 30,
-    "revealSeconds": 5,
-    "allVotedGraceSeconds": 4
+    "revealSeconds": 5
   },
   "noon": "Son las 12:00.\nEl jefe todavía no aparece.\nEl reloj sigue sin explicar qué problema estamos resolviendo.",
-  "rules": "Sin mazo, sin cartas, sin puntos, sin derrota. La memoria acumula hechos descubiertos (memoryAdd) y nunca se borra. Los desvíos (type detour) muestran la consecuencia y sus opciones vuelven a la conversación; la opción que llevó a un desvío queda marcada como ya intentada. Las 12:00 son un distractor: nada termina ni se bloquea por tiempo. Máximo cuatro opciones por escena. Las escenas pregunta_funcion y pregunta_agujero no estaban en la especificación y fueron añadidas porque varias rutas las referencian.",
+  "rules": "Sin mazo, sin cartas, sin puntos, sin derrota. La memoria acumula hechos descubiertos (memoryAdd) y nunca se borra. Los desvíos (type detour) muestran la consecuencia y sus opciones vuelven a la conversación; la opción que llevó a un desvío queda marcada como ya intentada. Las 12:00 son un distractor: nada termina ni se bloquea por tiempo. La escena se abre sin contador para que el grupo converse; el contador de voteSeconds arranca con el primer voto y la votación se cierra en cuanto han votado todos. Máximo cuatro opciones por escena. Las escenas pregunta_funcion y pregunta_agujero no estaban en la especificación y fueron añadidas porque varias rutas las referencian.",
   "closing": {
     "intro": "El jefe pidió arreglar un reloj.\n\nEl equipo tuvo que descubrir:",
     "discoveries": [

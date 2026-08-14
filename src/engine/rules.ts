@@ -19,7 +19,7 @@ export function initialState(story: Story, now: number): GameState {
     sceneId: story.startScene,
     round: 0,
     phase: 'voting',
-    deadline: now + story.timers.voteSeconds * 1000,
+    deadline: 0,
     winner: null,
     paused: false,
     tiedOptions: null,
@@ -124,7 +124,7 @@ export function resolveVote(
       winner: null,
       tiedOptions: null,
       repeatReason: 'no_votes',
-      deadline: now + story.timers.voteSeconds * 1000,
+      deadline: 0,
     }
   }
 
@@ -136,8 +136,55 @@ export function resolveVote(
     tiedOptions: leaders.map((leader) => leader.id),
     repeatReason: 'tie',
     ties: state.ties + 1,
-    deadline: now + story.timers.voteSeconds * 1000,
+    deadline: 0,
   }
+}
+
+export interface VotingSnapshot {
+  votedCount: number
+  everyoneVoted: boolean
+  leaders: SceneOption[]
+  voteCounts: Record<string, number>
+  now: number
+}
+
+/**
+ * Qué hacer con una votación abierta. Devuelve `null` si no hay nada que
+ * cambiar. Reglas:
+ *
+ * - La escena se abre SIN contador: el grupo necesita conversar.
+ * - El contador arranca con el primer voto: en cuanto alguien decide, todos
+ *   deben decidir.
+ * - Si votan todos, la votación se cierra en el acto.
+ * - Si se agota el tiempo sin que voten todos, se cierra igual.
+ * - Con un solo votante no hay recuento que mostrar: se avanza sin espera.
+ */
+export function tickVoting(
+  story: Story,
+  state: GameState,
+  scene: Scene,
+  { votedCount, everyoneVoted, leaders, voteCounts, now }: VotingSnapshot
+): GameState | null {
+  if (state.phase !== 'voting' || state.paused) return null
+  if (scene.options.length === 0) return null
+
+  if (everyoneVoted) {
+    const resolved = resolveVote(story, state, leaders, now)
+    if (votedCount <= 1 && resolved.phase === 'reveal' && resolved.winner) {
+      return applyOption(story, resolved, scene, resolved.winner, voteCounts, now)
+    }
+    return resolved
+  }
+
+  if (votedCount > 0 && state.deadline === 0) {
+    return { ...state, deadline: now + story.timers.voteSeconds * 1000 }
+  }
+
+  if (state.deadline > 0 && now >= state.deadline) {
+    return resolveVote(story, state, leaders, now)
+  }
+
+  return null
 }
 
 /** El facilitador fuerza una opción (empates, destrabar la conversación). */
@@ -206,7 +253,7 @@ export function applyOption(
     tiedOptions: null,
     repeatReason: null,
     forced: false,
-    deadline: now + story.timers.voteSeconds * 1000,
+    deadline: 0,
     memory: addMemory(state.memory, nextScene),
     tried: isDetour && !state.tried.includes(option.next)
       ? [...state.tried, option.next]
@@ -239,7 +286,7 @@ export function jumpToScene(
     tiedOptions: null,
     repeatReason: null,
     forced: false,
-    deadline: now + story.timers.voteSeconds * 1000,
+    deadline: 0,
     memory: addMemory(state.memory, scene),
     solvedAt: state.solvedAt ?? (scene.type === 'ending' ? now : null),
     route: [...state.route, { sceneId, at: now }],

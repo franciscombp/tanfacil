@@ -48,6 +48,11 @@ export function VoteStatusBar({ game }: { game: Game }) {
         {votedCount}/{totalCount}
       </span>
 
+      {phase === 'voting' && voteSecondsLeft === null && (
+        <span className="shrink-0 text-xs text-muted-foreground">
+          sin prisa
+        </span>
+      )}
       {phase === 'voting' && voteSecondsLeft !== null && (
         <span
           className={[

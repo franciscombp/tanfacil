@@ -6,8 +6,8 @@ import {
   jumpToScene,
   leadersOf,
   optionViews,
-  resolveVote,
   tally,
+  tickVoting,
   votableOptions,
 } from '@/engine/rules'
 import type { Fact, GameMetrics, GameState } from '@/engine/types'
@@ -237,22 +237,32 @@ export function useGame(displayName: string, role: RoomRole) {
     if (!isHost || !engineReady || !scene) return
 
     if (state.phase === 'voting') {
-      if (scene.options.length === 0 || state.paused) return
-      const grace = story.timers.allVotedGraceSeconds * 1000
-      if (everyoneVoted && state.deadline > now + grace) {
-        commit({ ...state, deadline: now + grace })
-        return
-      }
-      if (now >= state.deadline) {
-        commit(resolveVote(story, state, leaders, now))
-      }
+      const next = tickVoting(story, state, scene, {
+        votedCount,
+        everyoneVoted,
+        leaders,
+        voteCounts,
+        now,
+      })
+      if (next) commit(next)
       return
     }
 
     if (state.phase === 'reveal' && now >= state.deadline && state.winner) {
       commit(applyOption(story, state, scene, state.winner, voteCounts, now))
     }
-  }, [isHost, engineReady, scene, state, everyoneVoted, leaders, voteCounts, now, commit])
+  }, [
+    isHost,
+    engineReady,
+    scene,
+    state,
+    votedCount,
+    everyoneVoted,
+    leaders,
+    voteCounts,
+    now,
+    commit,
+  ])
 
   // Latido del anfitrión: quien entra tarde converge en segundos.
   useEffect(() => {
@@ -309,7 +319,7 @@ export function useGame(displayName: string, role: RoomRole) {
       paused: false,
       tiedOptions: null,
       repeatReason: null,
-      deadline: Date.now() + story.timers.voteSeconds * 1000,
+      deadline: 0,
     })
   }, [canModerate, commit])
 
@@ -321,11 +331,7 @@ export function useGame(displayName: string, role: RoomRole) {
 
   const resumeVote = useCallback(() => {
     if (!canModerate || !stateRef.current.paused) return
-    commit({
-      ...stateRef.current,
-      paused: false,
-      deadline: Date.now() + story.timers.voteSeconds * 1000,
-    })
+    commit({ ...stateRef.current, paused: false, deadline: 0 })
   }, [canModerate, commit])
 
   /** Salto directo a una escena (facilitador). */
@@ -384,6 +390,7 @@ export function useGame(displayName: string, role: RoomRole) {
     paused: state.paused,
     tiedOptions: state.tiedOptions,
     repeatReason: state.repeatReason,
+    voteSeconds: story.timers.voteSeconds,
     voteSecondsLeft:
       state.deadline > 0 ? Math.max(0, Math.ceil((state.deadline - now) / 1000)) : null,
     elapsedSeconds,

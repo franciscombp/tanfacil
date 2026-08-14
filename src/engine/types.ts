@@ -4,12 +4,10 @@
  */
 
 export interface StoryTimers {
-  /** Segundos de cada votación. */
+  /** Segundos de votación. El contador arranca con el primer voto. */
   voteSeconds: number
   /** Segundos mostrando el resultado antes de aplicarlo. */
   revealSeconds: number
-  /** Margen para rectificar cuando ya han votado todos. */
-  allVotedGraceSeconds: number
 }
 
 export type SceneType = 'scene' | 'detour' | 'convergence' | 'ending'
@@ -90,7 +88,10 @@ export interface GameState {
   /** Ronda de votación dentro de la escena; sube al repetirse. */
   round: number
   phase: GamePhase
-  /** Fin de la fase actual (epoch ms). 0 = sin límite. */
+  /**
+   * Fin de la fase actual (epoch ms). 0 = sin contador: la escena se abre así
+   * para que el grupo converse, y arranca con el primer voto.
+   */
   deadline: number
   winner: string | null
   /** Votación en pausa: el facilitador congela el cierre, los votos siguen. */
