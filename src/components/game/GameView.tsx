@@ -194,14 +194,20 @@ export function GameView({
               1.6fr/1fr dejaba la columna del relato en ~360 px a 1024: con el
               cuerpo nuevo salían 38 caracteres por línea, por debajo del suelo
               legible. Dos escalones (1fr a lg, 1.25fr a xl) mantienen la
-              medida entre 50 y 55 caracteres de 1024 a 1920. Y el `py` vertical
-              usa `--hueco`, que tiene techo de altura: a 1080 px de alto no
-              puede comerse el relato.
+              medida entre 50 y 55 caracteres de 1024 a 1920.
+
+              En un final no hay franja de acciones y en cambio hay resumen:
+              ahí la columna se desplaza entera en vez de encerrar el relato en
+              un scroll propio de dos líneas.
             */}
-            <div className="relative mx-auto grid w-full max-w-[100rem] flex-1 gap-hueco-150 px-5 py-hueco-150 sm:px-8 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(23rem,1fr)] lg:gap-hueco-200 lg:py-hueco lg:overflow-hidden xl:grid-cols-[minmax(0,1.25fr)_minmax(24rem,1fr)] 2xl:px-12">
+            <div
+              className={`relative mx-auto grid w-full max-w-[100rem] flex-1 gap-hueco-150 px-5 py-hueco-150 sm:px-8 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(23rem,1fr)] lg:gap-hueco-200 lg:py-hueco xl:grid-cols-[minmax(0,1.25fr)_minmax(24rem,1fr)] 2xl:px-12 ${
+                isEnding ? 'lg:overflow-y-auto' : 'lg:overflow-hidden'
+              }`}
+            >
               <Stage scene={scene} />
 
-              <div className="flex flex-col gap-hueco-150 lg:min-h-0">
+              <div className="flex flex-col gap-hueco-150 lg:gap-hueco lg:min-h-0">
                 <SceneNarration scene={scene} />
                 {isEnding ? (
                   <SummaryPanel game={game} />
@@ -214,8 +220,8 @@ export function GameView({
 
           {/* ACCIONES: franja propia al pie, dos columnas */}
           {!isEnding && (
-            <footer className="sticky bottom-0 z-30 shrink-0 border-t bg-card/90 px-5 py-hueco backdrop-blur sm:px-8 lg:static lg:bg-card/40 2xl:px-12">
-              <div className="mx-auto w-full max-w-[100rem] space-y-hueco">
+            <footer className="sticky bottom-0 z-30 shrink-0 border-t bg-card/90 px-5 py-hueco backdrop-blur sm:px-8 lg:py-hueco-75 lg:static lg:bg-card/40 2xl:px-12">
+              <div className="mx-auto w-full max-w-[100rem] space-y-hueco-75">
                 <OptionsGrid game={game} />
                 <VoteStatusBar game={game} />
               </div>

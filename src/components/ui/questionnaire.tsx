@@ -17,7 +17,7 @@ const Questionnaire = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('flex flex-col gap-2 lg:gap-hueco', className)} {...props} />
+  <div ref={ref} className={cn('flex flex-col gap-2 lg:gap-hueco-75', className)} {...props} />
 ))
 Questionnaire.displayName = 'Questionnaire'
 
@@ -48,7 +48,7 @@ const QuestionnaireOptions = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadioGroupPrimitive.Root
     ref={ref}
-    className={cn('grid gap-2.5 lg:gap-hueco', className)}
+    className={cn('grid gap-2.5 lg:gap-hueco-75', className)}
     {...props}
   />
 ))
@@ -98,7 +98,7 @@ const QuestionnaireOption = React.forwardRef<
         // La geometría del botón no se ata al ritmo por debajo de `lg`: en el
         // teléfono la opción es un destino táctil, no prosa, y el pie ya ocupa
         // media pantalla. `p-3 gap-2.5` son los valores de hoy.
-        'group relative flex w-full items-center gap-2.5 overflow-hidden rounded-xl border-2 border-input bg-card p-3 text-left transition-all duration-150 lg:gap-hueco-75 lg:border-[3px] lg:p-hueco 2xl:rounded-2xl',
+        'group relative flex w-full items-center gap-2.5 overflow-hidden rounded-xl border-2 border-input bg-card p-3 text-left transition-all duration-150 lg:gap-hueco-75 lg:border-[3px] lg:p-hueco-75 2xl:rounded-2xl',
         'hover:-translate-y-0.5 hover:border-primary/60 hover:bg-accent hover:shadow-lg hover:shadow-primary/5',
         'active:translate-y-0 active:scale-[0.99]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',

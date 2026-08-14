@@ -49,13 +49,28 @@
 
     --paso-1: calc(var(--paso-0) * 1.25);
     --paso-2: calc(var(--paso-0) * 1.5625);
-    --paso-3: calc(var(--paso-0) * 1.953125);
+    --paso-3: calc(var(--paso-0) * 1.6);
 
     /*
-     * Hueco estructural: 0,62 del cuerpo, con techo de altura de ventana.
-     * El texto se mide contra el ancho; el espacio, contra lo que escasee.
+     * Hueco estructural, proporcional al cuerpo. Llevaba un techo de altura
+     * de ventana (`1.1vh`) para no comerse el relato: a 1080 px de alto ese
+     * término ganaba siempre y dejaba TODOS los huecos de la interfaz en
+     * 15px, midiera lo que midiera el texto. Medido, sobraban 202px muertos
+     * bajo el panel de memoria: el alto nunca fue la restricción, así que el
+     * techo sólo servía para condensarlo todo.
      */
-    --hueco: max(0.5rem, min(calc(var(--paso-0) * 0.62), calc(0.2rem + 1.1vh)));
+    --hueco: calc(var(--paso-0) * 0.8);
+  }
+
+  /*
+   * En pantalla grande —la que se proyecta— el aire es lo que hace legible la
+   * jerarquía: con el título a 50px, separarlo del cuerpo 15px lo funde en un
+   * solo bloque. Ahí el hueco pasa a 1,15 del cuerpo.
+   */
+  @media (min-width: 1024px) {
+    :root {
+      --hueco: calc(var(--paso-0) * 1);
+    }
   }
 }
 

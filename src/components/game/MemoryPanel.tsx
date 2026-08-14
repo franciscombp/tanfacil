@@ -17,21 +17,25 @@ export function MemoryPanel({ game }: { game: Game }) {
      * proyectada. La memoria es material de consulta; el relato es lo que la
      * sala está leyendo.
      */
-    <aside className="flex min-h-0 w-full shrink-0 flex-col rounded-lg border bg-card/60 lg:shrink">
+    <aside className="flex min-h-0 w-full shrink-0 flex-col rounded-lg border bg-card/60 lg:max-h-[24%] lg:overflow-hidden lg:shrink">
       {/* El tracking ya viaja dentro de `text-rotulo`: no se repite aquí. */}
       <p className="flex items-center gap-hueco-50 border-b px-hueco py-hueco-50 text-rotulo font-semibold uppercase text-muted-foreground">
         <NotebookPen className="size-[1.1em]" /> Lo que sabemos
       </p>
 
       {memory.length === 0 ? (
-        <p className="px-hueco py-hueco text-apoyo text-muted-foreground">
+        <p className="px-hueco py-hueco-50 text-apoyo text-muted-foreground lg:min-h-0 lg:overflow-y-auto">
           Todavía nada. Lo que el equipo descubra quedará anotado aquí.
         </p>
       ) : (
-        /* `max-h-48` fija dejaba el panel en 192 px de una ventana de 844 y de
-           una de 1080 por igual. Atada a la altura: 10vh = 108 px a 1080 (3-4
-           hechos, con scroll propio) y el resto va al relato. */
-        <ul className="max-h-52 space-y-hueco-50 overflow-y-auto px-hueco py-hueco-75 lg:max-h-[10vh]">
+        /*
+         * La lista hace scroll propio y el panel entero está topado al 20 % de
+         * la columna: con alto libre, una escena de cinco párrafos quedaba
+         * cortada a media frase en la pantalla proyectada, que es donde menos
+         * se puede desplazar. La memoria es material de consulta; el relato es
+         * lo que la sala está leyendo.
+         */
+        <ul className="max-h-52 space-y-hueco-50 overflow-y-auto px-hueco py-hueco-50 lg:max-h-none lg:min-h-0">
           {memory.map((fact, index) => (
             <li
               key={fact.id}
@@ -46,7 +50,7 @@ export function MemoryPanel({ game }: { game: Game }) {
       )}
 
       <p
-        className="mt-auto border-t px-hueco py-hueco-50 text-right font-mono text-rotulo tracking-normal tabular-nums text-muted-foreground"
+        className="mt-auto border-t px-hueco py-hueco-25 text-right font-mono text-rotulo tracking-normal tabular-nums text-muted-foreground"
         title="Tiempo real de la partida. Sólo informativo."
       >
         {formatDuration(metrics.elapsedSeconds)}

@@ -19,16 +19,15 @@ export default {
       fontSize: {
         rotulo: ['var(--paso-menos2)', { lineHeight: '1.35', letterSpacing: '0.09em' }],
         apoyo: ['var(--paso-menos1)', { lineHeight: '1.45' }],
-        cuerpo: ['var(--paso-0)', { lineHeight: '1.55' }],
+        cuerpo: ['var(--paso-0)', { lineHeight: '1.45' }],
         accion: ['var(--paso-1)', { lineHeight: '1.25' }],
         cifra: ['var(--paso-2)', { lineHeight: '1', letterSpacing: '-0.015em' }],
         titulo: ['var(--paso-3)', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
       },
       /*
-       * HUECOS ESTRUCTURALES: 0,62 del cuerpo, pero nunca más de lo que la
-       * altura de la ventana puede pagar. A partir de `lg` el layout está
-       * clavado a la ventana, y un espaciado que crece sólo con el ancho
-       * acaba comiéndose el relato que dice proteger.
+       * HUECOS ESTRUCTURALES, derivados del cuerpo (ver `--hueco`). Son la
+       * única familia de espacio entre bloques; el espacio DENTRO de un
+       * bloque de texto va en `em` de ese texto, para que acompañe al tamaño.
        */
       spacing: {
         'hueco-25': 'calc(var(--hueco) * 0.25)',

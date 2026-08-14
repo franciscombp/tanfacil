@@ -21,7 +21,7 @@ export function SummaryPanel({ game }: { game: Game }) {
    */
   return (
     <div className="w-full max-w-[34em] animate-fade-up space-y-hueco-150 rounded-xl border bg-card/60 p-hueco-150 text-center">
-      <div className="text-cuerpo text-foreground [&>p+p]:mt-[0.6em]">
+      <div className="text-cuerpo text-foreground [&>p+p]:mt-[0.75em]">
         {enParrafos(closing.intro).map((parrafo, i) => (
           <p key={i} className="whitespace-pre-line">
             {parrafo}
