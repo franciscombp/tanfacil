@@ -176,5 +176,15 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
     track()
   }, [presence, track])
 
+  /**
+   * Keepalive: el grupo puede pasar minutos leyendo o conversando sin tocar
+   * nada. Re-publicar la presencia periódicamente mantiene tráfico en el
+   * canal para que ni el socket ni el proyecto se den por inactivos.
+   */
+  useEffect(() => {
+    const timer = setInterval(track, 30_000)
+    return () => clearInterval(timer)
+  }, [track])
+
   return { members, status, connectedAt, sendState }
 }

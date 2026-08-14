@@ -1,8 +1,15 @@
 {
   "title": "No es tan fácil",
   "premise": "El jefe pidió arreglar el reloj antes de las 12:00.",
-  "clock": { "startsAt": "11:42", "deadline": "12:00" },
-  "timers": { "voteSeconds": 60, "revealSeconds": 6, "allVotedGraceSeconds": 5 },
+  "clock": {
+    "startsAt": "11:42",
+    "deadline": "12:00"
+  },
+  "timers": {
+    "voteSeconds": 30,
+    "revealSeconds": 5,
+    "allVotedGraceSeconds": 4
+  },
   "noon": "Son las 12:00.\nEl jefe todavía no aparece.\nEl reloj sigue sin explicar qué problema estamos resolviendo.",
   "rules": "Sin mazo, sin cartas, sin puntos, sin derrota. La memoria acumula hechos descubiertos (memoryAdd) y nunca se borra. Los desvíos (type detour) muestran la consecuencia y sus opciones vuelven a la conversación; la opción que llevó a un desvío queda marcada como ya intentada. Las 12:00 son un distractor: nada termina ni se bloquea por tiempo. Máximo cuatro opciones por escena. Las escenas pregunta_funcion y pregunta_agujero no estaban en la especificación y fueron añadidas porque varias rutas las referencian.",
   "closing": {
@@ -25,10 +32,30 @@
       "art": "🕐",
       "text": "El jefe mira el reloj de la pared. Está medio tapado por una viga y se ve horrible.\n\n«Arréglenlo. No puede seguir así.»\n\nSon las 11:42.",
       "options": [
-        { "id": "solucionar", "label": "Solucionarlo", "next": "pintar_viga", "actionType": "actuar" },
-        { "id": "preguntar_mal", "label": "Preguntar qué está mal exactamente", "next": "pregunta_problema", "actionType": "preguntar" },
-        { "id": "preguntar_funcion", "label": "Preguntar para qué sirve el reloj", "next": "pregunta_funcion", "actionType": "preguntar" },
-        { "id": "contestar", "label": "Decirle al jefe que lo solucione él", "next": "jefe_responsabilidad", "actionType": "broma" }
+        {
+          "id": "solucionar",
+          "label": "Solucionarlo",
+          "next": "pintar_viga",
+          "actionType": "actuar"
+        },
+        {
+          "id": "preguntar_mal",
+          "label": "Preguntar qué está mal exactamente",
+          "next": "pregunta_problema",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "preguntar_funcion",
+          "label": "Preguntar para qué sirve el reloj",
+          "next": "pregunta_funcion",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "contestar",
+          "label": "Decirle al jefe que lo solucione él",
+          "next": "jefe_responsabilidad",
+          "actionType": "broma"
+        }
       ]
     },
     {
@@ -38,8 +65,18 @@
       "art": "🚪",
       "text": "El jefe los mira en silencio.\n\n«Perfecto. Entonces ustedes son los responsables de que siga así.»",
       "options": [
-        { "id": "volver", "label": "Volver al problema", "next": "inicio", "actionType": "decidir" },
-        { "id": "solucionar", "label": "Solucionarlo", "next": "pintar_viga", "actionType": "actuar" }
+        {
+          "id": "volver",
+          "label": "Volver al problema",
+          "next": "inicio",
+          "actionType": "decidir"
+        },
+        {
+          "id": "solucionar",
+          "label": "Solucionarlo",
+          "next": "pintar_viga",
+          "actionType": "actuar"
+        }
       ]
     },
     {
@@ -49,10 +86,30 @@
       "art": "❓",
       "text": "El jefe responde:\n\n«Que se vea bien.»\n\nNo queda claro si el problema es que no se ve la hora, que el reloj está detenido, que la pared se ve mal o que alguien se acaba de fijar en él.",
       "options": [
-        { "id": "hacer_visible", "label": "Hacer visible el reloj", "next": "pintar_viga", "actionType": "actuar" },
-        { "id": "preguntar_funcion", "label": "Preguntar para qué sirve", "next": "pregunta_funcion", "actionType": "preguntar" },
-        { "id": "observar_pared", "label": "Mirar qué hay detrás", "next": "mover_reloj", "actionType": "observar" },
-        { "id": "aceptar_encargo", "label": "Aceptar la definición del jefe", "next": "pintar_viga", "actionType": "decidir" }
+        {
+          "id": "hacer_visible",
+          "label": "Hacer visible el reloj",
+          "next": "pintar_viga",
+          "actionType": "actuar"
+        },
+        {
+          "id": "preguntar_funcion",
+          "label": "Preguntar para qué sirve",
+          "next": "pregunta_funcion",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "observar_pared",
+          "label": "Mirar qué hay detrás",
+          "next": "mover_reloj",
+          "actionType": "observar"
+        },
+        {
+          "id": "aceptar_encargo",
+          "label": "Aceptar la definición del jefe",
+          "next": "pintar_viga",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -62,12 +119,30 @@
       "art": "🤔",
       "text": "Nadie lo tiene claro.\n\nEl reloj está detenido desde hace años y nadie recuerda la última vez que alguien lo miró para saber la hora.\n\nAlguien comenta que antes «marcaba otras horas».",
       "memoryAdd": [
-        { "id": "reloj-detenido", "text": "El reloj está detenido desde hace años" }
+        {
+          "id": "reloj-detenido",
+          "text": "El reloj está detenido desde hace años"
+        }
       ],
       "options": [
-        { "id": "horas", "label": "Preguntar qué horas marcaba antes", "next": "pregunta_espana", "actionType": "preguntar" },
-        { "id": "cerca", "label": "Mirarlo de cerca", "next": "mover_reloj", "actionType": "observar" },
-        { "id": "consulta", "label": "Preguntar quién lo consulta hoy", "next": "pregunta_consulta", "actionType": "preguntar" }
+        {
+          "id": "horas",
+          "label": "Preguntar qué horas marcaba antes",
+          "next": "pregunta_espana",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "cerca",
+          "label": "Mirarlo de cerca",
+          "next": "mover_reloj",
+          "actionType": "observar"
+        },
+        {
+          "id": "consulta",
+          "label": "Preguntar quién lo consulta hoy",
+          "next": "pregunta_consulta",
+          "actionType": "preguntar"
+        }
       ]
     },
     {
@@ -77,10 +152,30 @@
       "art": "🎨",
       "text": "Alguien pinta sobre la viga los números que faltan.\n\nAhora se puede interpretar la hora completa, pero el reloj parece una instalación artística hecha con prisa.\n\nEl jefe vuelve a mirar la pared.\n\n«Ahora se entiende. Pero estéticamente está horrible.»",
       "options": [
-        { "id": "decorar", "label": "Decorarlo mejor", "next": "decorar_viga", "actionType": "actuar" },
-        { "id": "quitar_viga", "label": "Quitar la viga", "next": "quitar_viga", "actionType": "actuar" },
-        { "id": "mover_reloj", "label": "Mover el reloj", "next": "mover_reloj", "actionType": "actuar" },
-        { "id": "preguntar_viga", "label": "Preguntar qué función cumple la viga", "next": "pregunta_viga", "actionType": "preguntar" }
+        {
+          "id": "decorar",
+          "label": "Decorarlo mejor",
+          "next": "decorar_viga",
+          "actionType": "actuar"
+        },
+        {
+          "id": "quitar_viga",
+          "label": "Quitar la viga",
+          "next": "quitar_viga",
+          "actionType": "actuar"
+        },
+        {
+          "id": "mover_reloj",
+          "label": "Mover el reloj",
+          "next": "mover_reloj",
+          "actionType": "actuar"
+        },
+        {
+          "id": "preguntar_viga",
+          "label": "Preguntar qué función cumple la viga",
+          "next": "pregunta_viga",
+          "actionType": "preguntar"
+        }
       ]
     },
     {
@@ -90,9 +185,24 @@
       "art": "🖼️",
       "text": "La viga ahora tiene números, textura de mármol y una placa que dice:\n\n«Intervención artística.»\n\nEl reloj sigue sin funcionar y continúa parcialmente oculto.",
       "options": [
-        { "id": "presentar", "label": "Presentarlo así al jefe", "next": "jefe_instalacion", "actionType": "broma" },
-        { "id": "volver", "label": "Volver y probar otra cosa", "next": "pintar_viga", "actionType": "decidir" },
-        { "id": "preguntar_problema", "label": "Preguntar qué estamos intentando arreglar", "next": "pregunta_problema", "actionType": "preguntar" }
+        {
+          "id": "presentar",
+          "label": "Presentarlo así al jefe",
+          "next": "jefe_instalacion",
+          "actionType": "broma"
+        },
+        {
+          "id": "volver",
+          "label": "Volver y probar otra cosa",
+          "next": "pintar_viga",
+          "actionType": "decidir"
+        },
+        {
+          "id": "preguntar_problema",
+          "label": "Preguntar qué estamos intentando arreglar",
+          "next": "pregunta_problema",
+          "actionType": "preguntar"
+        }
       ]
     },
     {
@@ -102,8 +212,18 @@
       "art": "🫥",
       "text": "El jefe escucha la explicación completa sobre la intención artística.\n\nMira la placa. Mira la viga. Mira el reloj.\n\n«Yo solo dije que se viera mejor.»",
       "options": [
-        { "id": "volver", "label": "Volver a la decisión", "next": "pintar_viga", "actionType": "decidir" },
-        { "id": "preguntar_problema", "label": "Preguntar qué estamos intentando arreglar", "next": "pregunta_problema", "actionType": "preguntar" }
+        {
+          "id": "volver",
+          "label": "Volver a la decisión",
+          "next": "pintar_viga",
+          "actionType": "decidir"
+        },
+        {
+          "id": "preguntar_problema",
+          "label": "Preguntar qué estamos intentando arreglar",
+          "next": "pregunta_problema",
+          "actionType": "preguntar"
+        }
       ]
     },
     {
@@ -113,12 +233,30 @@
       "art": "🏗️",
       "text": "Quitan la viga.\n\nDurante tres segundos, el reloj se ve perfecto.\n\nDespués se escucha un crujido y cae parte del techo.\n\nLa viga era estructural. Sostenía el forjado.\n\nEl costo de reparar el techo supera varias veces el presupuesto de toda la oficina.",
       "memoryAdd": [
-        { "id": "viga-estructural", "text": "La viga es estructural y no se puede retirar sin una obra" }
+        {
+          "id": "viga-estructural",
+          "text": "La viga es estructural y no se puede retirar sin una obra"
+        }
       ],
       "options": [
-        { "id": "colecta", "label": "Hacer una colecta para pagar el techo", "next": "colecta", "actionType": "broma" },
-        { "id": "defender", "label": "Explicar que al menos el reloj quedó visible", "next": "defender_viga", "actionType": "broma" },
-        { "id": "volver", "label": "Volver y probar otra cosa", "next": "pintar_viga", "actionType": "decidir" }
+        {
+          "id": "colecta",
+          "label": "Hacer una colecta para pagar el techo",
+          "next": "colecta",
+          "actionType": "broma"
+        },
+        {
+          "id": "defender",
+          "label": "Explicar que al menos el reloj quedó visible",
+          "next": "defender_viga",
+          "actionType": "broma"
+        },
+        {
+          "id": "volver",
+          "label": "Volver y probar otra cosa",
+          "next": "pintar_viga",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -128,8 +266,18 @@
       "art": "🫙",
       "text": "La colecta recauda exactamente lo suficiente para comprar cinta adhesiva y un café.\n\nEl techo sigue abierto.",
       "options": [
-        { "id": "volver", "label": "Volver y probar otra cosa", "next": "pintar_viga", "actionType": "decidir" },
-        { "id": "aceptar", "label": "Aceptar que el reloj quedó visible", "next": "defender_viga", "actionType": "broma" }
+        {
+          "id": "volver",
+          "label": "Volver y probar otra cosa",
+          "next": "pintar_viga",
+          "actionType": "decidir"
+        },
+        {
+          "id": "aceptar",
+          "label": "Aceptar que el reloj quedó visible",
+          "next": "defender_viga",
+          "actionType": "broma"
+        }
       ]
     },
     {
@@ -139,7 +287,12 @@
       "art": "😶",
       "text": "El jefe observa el agujero del techo.\n\n«Sí, pero el reloj se ve increíble.»\n\nNadie sabe qué responder.",
       "options": [
-        { "id": "volver", "label": "Volver y probar otra cosa", "next": "pintar_viga", "actionType": "decidir" }
+        {
+          "id": "volver",
+          "label": "Volver y probar otra cosa",
+          "next": "pintar_viga",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -149,13 +302,36 @@
       "art": "📐",
       "text": "La viga se instaló durante una reforma posterior al reloj.\n\nEs estructural y sostiene parte del techo.\n\nEl reloj quedó detrás porque alguien decidió conservarlo sin mover la instalación.",
       "memoryAdd": [
-        { "id": "viga-posterior", "text": "La viga se añadió después del reloj y sostiene el techo" }
+        {
+          "id": "viga-posterior",
+          "text": "La viga se añadió después del reloj y sostiene el techo"
+        }
       ],
       "options": [
-        { "id": "preguntar_reloj", "label": "Preguntar por qué no movieron el reloj", "next": "pregunta_decision_antigua", "actionType": "preguntar" },
-        { "id": "preguntar_funcion", "label": "Preguntar qué función sigue cumpliendo el reloj", "next": "pregunta_funcion", "actionType": "preguntar" },
-        { "id": "mirar_pared", "label": "Revisar qué hay detrás del reloj", "next": "mover_reloj", "actionType": "observar" },
-        { "id": "insistir_viga", "label": "Insistir en quitar la viga", "next": "quitar_viga", "actionType": "actuar" }
+        {
+          "id": "preguntar_reloj",
+          "label": "Preguntar por qué no movieron el reloj",
+          "next": "pregunta_decision_antigua",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "preguntar_funcion",
+          "label": "Preguntar qué función sigue cumpliendo el reloj",
+          "next": "pregunta_funcion",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "mirar_pared",
+          "label": "Revisar qué hay detrás del reloj",
+          "next": "mover_reloj",
+          "actionType": "observar"
+        },
+        {
+          "id": "insistir_viga",
+          "label": "Insistir en quitar la viga",
+          "next": "quitar_viga",
+          "actionType": "actuar"
+        }
       ]
     },
     {
@@ -165,12 +341,30 @@
       "art": "🗿",
       "text": "Nadie sabe exactamente quién decidió dejar el reloj en ese lugar.\n\nLa explicación más repetida es:\n\n«Siempre estuvo ahí.»",
       "memoryAdd": [
-        { "id": "decision-heredada", "text": "La posición actual del reloj parece una decisión heredada, no una necesidad comprobada" }
+        {
+          "id": "decision-heredada",
+          "text": "La posición actual del reloj parece una decisión heredada, no una necesidad comprobada"
+        }
       ],
       "options": [
-        { "id": "preguntar_funcion", "label": "Preguntar qué función cumple hoy", "next": "pregunta_funcion", "actionType": "preguntar" },
-        { "id": "mover_reloj", "label": "Moverlo con cuidado", "next": "mover_reloj", "actionType": "observar" },
-        { "id": "aceptar_costumbre", "label": "Aceptar que siempre estuvo ahí", "next": "decision_nostalgia", "actionType": "decidir" }
+        {
+          "id": "preguntar_funcion",
+          "label": "Preguntar qué función cumple hoy",
+          "next": "pregunta_funcion",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "mover_reloj",
+          "label": "Moverlo con cuidado",
+          "next": "mover_reloj",
+          "actionType": "observar"
+        },
+        {
+          "id": "aceptar_costumbre",
+          "label": "Aceptar que siempre estuvo ahí",
+          "next": "decision_nostalgia",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -180,13 +374,36 @@
       "art": "⭕",
       "text": "Mueven el reloj unos centímetros.\n\nQueda una marca circular y aparece un agujero con un cable suelto.\n\nEl reloj no estaba simplemente colgado: estaba cubriendo algo.",
       "memoryAdd": [
-        { "id": "agujero-instalacion", "text": "El reloj ocultaba un agujero con una instalación antigua" }
+        {
+          "id": "agujero-instalacion",
+          "text": "El reloj ocultaba un agujero con una instalación antigua"
+        }
       ],
       "options": [
-        { "id": "tapar", "label": "Tapar el agujero", "next": "tapar_agujero", "actionType": "actuar" },
-        { "id": "volver", "label": "Volver a poner el reloj donde estaba", "next": "volver_reloj", "actionType": "actuar" },
-        { "id": "preguntar_cable", "label": "Preguntar qué había conectado ese cable", "next": "pregunta_cable", "actionType": "preguntar" },
-        { "id": "preguntar_agujero", "label": "Preguntar por qué el reloj estaba tapando el agujero", "next": "pregunta_agujero", "actionType": "preguntar" }
+        {
+          "id": "tapar",
+          "label": "Tapar el agujero",
+          "next": "tapar_agujero",
+          "actionType": "actuar"
+        },
+        {
+          "id": "volver",
+          "label": "Volver a poner el reloj donde estaba",
+          "next": "volver_reloj",
+          "actionType": "actuar"
+        },
+        {
+          "id": "preguntar_cable",
+          "label": "Preguntar qué había conectado ese cable",
+          "next": "pregunta_cable",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "preguntar_agujero",
+          "label": "Preguntar por qué el reloj estaba tapando el agujero",
+          "next": "pregunta_agujero",
+          "actionType": "preguntar"
+        }
       ]
     },
     {
@@ -196,12 +413,30 @@
       "art": "🩹",
       "text": "Nadie recuerda una decisión formal.\n\nEn algún momento alguien colgó el reloj justo ahí, y el agujero dejó de existir para la oficina.\n\nEl cable, en cambio, sigue existiendo.",
       "memoryAdd": [
-        { "id": "parche-heredado", "text": "El reloj se colgó como parche para ocultar la instalación" }
+        {
+          "id": "parche-heredado",
+          "text": "El reloj se colgó como parche para ocultar la instalación"
+        }
       ],
       "options": [
-        { "id": "cable", "label": "Preguntar qué había conectado ese cable", "next": "pregunta_cable", "actionType": "preguntar" },
-        { "id": "antigua", "label": "Preguntar quién tomó esa decisión", "next": "pregunta_decision_antigua", "actionType": "preguntar" },
-        { "id": "volver", "label": "Volver al agujero", "next": "mover_reloj", "actionType": "observar" }
+        {
+          "id": "cable",
+          "label": "Preguntar qué había conectado ese cable",
+          "next": "pregunta_cable",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "antigua",
+          "label": "Preguntar quién tomó esa decisión",
+          "next": "pregunta_decision_antigua",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "volver",
+          "label": "Volver al agujero",
+          "next": "mover_reloj",
+          "actionType": "observar"
+        }
       ]
     },
     {
@@ -211,12 +446,30 @@
       "art": "⚡",
       "text": "Tapan el agujero rápidamente, pero dejan los cables sueltos dentro.\n\nSe escucha un chispazo y toda la oficina se queda sin luz.",
       "memoryAdd": [
-        { "id": "cable-sin-entender", "text": "El cable no podía taparse sin entender la instalación" }
+        {
+          "id": "cable-sin-entender",
+          "text": "El cable no podía taparse sin entender la instalación"
+        }
       ],
       "options": [
-        { "id": "casa", "label": "Nos vamos a trabajar desde casa", "next": "volver_agujero", "actionType": "broma" },
-        { "id": "culpar", "label": "Decimos que fue una falla previa", "next": "volver_agujero", "actionType": "broma" },
-        { "id": "volver", "label": "Probemos otra cosa", "next": "volver_agujero", "actionType": "decidir" }
+        {
+          "id": "casa",
+          "label": "Nos vamos a trabajar desde casa",
+          "next": "volver_agujero",
+          "actionType": "broma"
+        },
+        {
+          "id": "culpar",
+          "label": "Decimos que fue una falla previa",
+          "next": "volver_agujero",
+          "actionType": "broma"
+        },
+        {
+          "id": "volver",
+          "label": "Probemos otra cosa",
+          "next": "volver_agujero",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -226,8 +479,18 @@
       "art": "🌑",
       "text": "El agujero ya no se ve.\n\nTampoco se ve la oficina, porque no hay luz.\n\nEl equipo vuelve al punto anterior con una certeza nueva: ocultar algo no equivale a resolverlo.",
       "options": [
-        { "id": "revisar", "label": "Revisar el agujero con cuidado", "next": "mover_reloj", "actionType": "observar" },
-        { "id": "volver_reloj", "label": "Volver a poner el reloj", "next": "volver_reloj", "actionType": "actuar" }
+        {
+          "id": "revisar",
+          "label": "Revisar el agujero con cuidado",
+          "next": "mover_reloj",
+          "actionType": "observar"
+        },
+        {
+          "id": "volver_reloj",
+          "label": "Volver a poner el reloj",
+          "next": "volver_reloj",
+          "actionType": "actuar"
+        }
       ]
     },
     {
@@ -237,12 +500,30 @@
       "art": "🙈",
       "text": "Vuelven a colgar el reloj exactamente donde estaba.\n\nTodo parece igual que antes, pero ahora saben que detrás hay un cable suelto y un agujero.",
       "memoryAdd": [
-        { "id": "apariencia-no-resuelve", "text": "Volver a la apariencia anterior no elimina lo que está oculto" }
+        {
+          "id": "apariencia-no-resuelve",
+          "text": "Volver a la apariencia anterior no elimina lo que está oculto"
+        }
       ],
       "options": [
-        { "id": "aceptar", "label": "Aceptar que quedó como estaba", "next": "jefe_como_estaba", "actionType": "decidir" },
-        { "id": "preguntar", "label": "Preguntar qué había detrás", "next": "pregunta_cable", "actionType": "preguntar" },
-        { "id": "mover", "label": "Moverlo otra vez y revisar con cuidado", "next": "mover_reloj", "actionType": "observar" }
+        {
+          "id": "aceptar",
+          "label": "Aceptar que quedó como estaba",
+          "next": "jefe_como_estaba",
+          "actionType": "decidir"
+        },
+        {
+          "id": "preguntar",
+          "label": "Preguntar qué había detrás",
+          "next": "pregunta_cable",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "mover",
+          "label": "Moverlo otra vez y revisar con cuidado",
+          "next": "mover_reloj",
+          "actionType": "observar"
+        }
       ]
     },
     {
@@ -252,7 +533,12 @@
       "art": "🤷",
       "text": "El jefe vuelve a mirar la pared.\n\n«¿Y qué arreglaron?»\n\nEl equipo responde:\n\n«La tranquilidad.»",
       "options": [
-        { "id": "volver", "label": "Volver al agujero", "next": "mover_reloj", "actionType": "decidir" }
+        {
+          "id": "volver",
+          "label": "Volver al agujero",
+          "next": "mover_reloj",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -262,14 +548,40 @@
       "art": "🔌",
       "text": "Antes había allí un reloj mundial digital.\n\nMostraba la hora de Ecuador y España.\n\nEl cable formaba parte de esa instalación.",
       "memoryAdd": [
-        { "id": "reloj-mundial", "text": "Antes había un reloj mundial digital" },
-        { "id": "funcion-espana", "text": "Mostraba la hora de Ecuador y España" }
+        {
+          "id": "reloj-mundial",
+          "text": "Antes había un reloj mundial digital"
+        },
+        {
+          "id": "funcion-espana",
+          "text": "Mostraba la hora de Ecuador y España"
+        }
       ],
       "options": [
-        { "id": "comprar", "label": "Comprar otro reloj mundial", "next": "comprar_reloj", "actionType": "actuar" },
-        { "id": "preguntar_necesidad", "label": "Preguntar por qué necesitaban saber la hora de España", "next": "pregunta_espana", "actionType": "preguntar" },
-        { "id": "preguntar_actual", "label": "Preguntar cómo se resuelve hoy", "next": "funcion_actual", "actionType": "preguntar" },
-        { "id": "volver", "label": "Volver a poner el reloj donde estaba", "next": "volver_reloj", "actionType": "actuar" }
+        {
+          "id": "comprar",
+          "label": "Comprar otro reloj mundial",
+          "next": "comprar_reloj",
+          "actionType": "actuar"
+        },
+        {
+          "id": "preguntar_necesidad",
+          "label": "Preguntar por qué necesitaban saber la hora de España",
+          "next": "pregunta_espana",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "preguntar_actual",
+          "label": "Preguntar cómo se resuelve hoy",
+          "next": "funcion_actual",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "volver",
+          "label": "Volver a poner el reloj donde estaba",
+          "next": "volver_reloj",
+          "actionType": "actuar"
+        }
       ]
     },
     {
@@ -279,10 +591,30 @@
       "art": "🛒",
       "text": "Compran otro reloj mundial, lo conectan y muestran la hora de España.\n\nAhora el reloj funciona, el agujero sigue mal resuelto, la viga sigue delante y nadie ha demostrado que alguien necesite mirar esa hora.",
       "options": [
-        { "id": "mas_grande", "label": "Comprar uno más grande", "next": "comprar_reloj_mas_grande", "actionType": "actuar" },
-        { "id": "pantalla", "label": "Poner una pantalla digital", "next": "pantalla_digital", "actionType": "actuar" },
-        { "id": "preguntar", "label": "Preguntar si alguien consulta esa información", "next": "pregunta_consulta", "actionType": "preguntar" },
-        { "id": "volver", "label": "Volver a investigar", "next": "pregunta_cable", "actionType": "decidir" }
+        {
+          "id": "mas_grande",
+          "label": "Comprar uno más grande",
+          "next": "comprar_reloj_mas_grande",
+          "actionType": "actuar"
+        },
+        {
+          "id": "pantalla",
+          "label": "Poner una pantalla digital",
+          "next": "pantalla_digital",
+          "actionType": "actuar"
+        },
+        {
+          "id": "preguntar",
+          "label": "Preguntar si alguien consulta esa información",
+          "next": "pregunta_consulta",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "volver",
+          "label": "Volver a investigar",
+          "next": "pregunta_cable",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -292,7 +624,12 @@
       "art": "🕰️",
       "text": "Compran un reloj más grande.\n\nAhora se ve mejor, pesa más y tapa una zona todavía mayor de la pared.\n\nLa viga continúa en el mismo lugar.",
       "options": [
-        { "id": "volver", "label": "Volver a investigar", "next": "pregunta_cable", "actionType": "decidir" }
+        {
+          "id": "volver",
+          "label": "Volver a investigar",
+          "next": "pregunta_cable",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -302,7 +639,12 @@
       "art": "📺",
       "text": "Sustituyen el reloj por una pantalla digital.\n\nLa pantalla necesita mantenimiento, conexión y un presupuesto nuevo.\n\nMuestra una información que todavía nadie ha demostrado necesitar.",
       "options": [
-        { "id": "volver", "label": "Volver a investigar", "next": "pregunta_cable", "actionType": "decidir" }
+        {
+          "id": "volver",
+          "label": "Volver a investigar",
+          "next": "pregunta_cable",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -312,13 +654,36 @@
       "art": "🌍",
       "text": "Cuando se usaba fax y las llamadas internacionales eran menos previsibles, era importante saber si España estaba dentro del horario laboral.\n\nEl reloj evitaba llamadas fuera de hora.",
       "memoryAdd": [
-        { "id": "funcion-original", "text": "La función original era coordinar horarios y evitar llamadas fuera de hora" }
+        {
+          "id": "funcion-original",
+          "text": "La función original era coordinar horarios y evitar llamadas fuera de hora"
+        }
       ],
       "options": [
-        { "id": "actual", "label": "Preguntar cómo se resuelve hoy", "next": "funcion_actual", "actionType": "preguntar" },
-        { "id": "cuando", "label": "Preguntar cuándo dejó de ser necesario", "next": "pregunta_cuando", "actionType": "preguntar" },
-        { "id": "quien", "label": "Preguntar quién consultaba el reloj", "next": "pregunta_consulta", "actionType": "preguntar" },
-        { "id": "nostalgia", "label": "Conservarlo por si algún día vuelve a hacer falta", "next": "decision_nostalgia", "actionType": "decidir" }
+        {
+          "id": "actual",
+          "label": "Preguntar cómo se resuelve hoy",
+          "next": "funcion_actual",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "cuando",
+          "label": "Preguntar cuándo dejó de ser necesario",
+          "next": "pregunta_cuando",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "quien",
+          "label": "Preguntar quién consultaba el reloj",
+          "next": "pregunta_consulta",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "nostalgia",
+          "label": "Conservarlo por si algún día vuelve a hacer falta",
+          "next": "decision_nostalgia",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -328,14 +693,40 @@
       "art": "💻",
       "text": "Hoy Teams muestra la disponibilidad y el horario de cada país.\n\nLa información está disponible en todas las pantallas.\n\nLa función existe, pero ya no depende de ese reloj.",
       "memoryAdd": [
-        { "id": "funcion-teams", "text": "Teams reemplazó la función práctica del reloj" },
-        { "id": "funcion-sin-objeto", "text": "La necesidad original ya no depende del objeto físico" }
+        {
+          "id": "funcion-teams",
+          "text": "Teams reemplazó la función práctica del reloj"
+        },
+        {
+          "id": "funcion-sin-objeto",
+          "text": "La necesidad original ya no depende del objeto físico"
+        }
       ],
       "options": [
-        { "id": "consultar", "label": "Preguntar si alguien sigue mirando el reloj", "next": "pregunta_consulta", "actionType": "preguntar" },
-        { "id": "problema", "label": "Preguntar qué problema queda por resolver", "next": "pregunta_final", "actionType": "preguntar" },
-        { "id": "pilas", "label": "Comprar pilas y hacerlo funcionar", "next": "poner_pilas", "actionType": "actuar" },
-        { "id": "decision", "label": "Volver a la decisión sobre el reloj", "next": "pregunta_final", "actionType": "decidir" }
+        {
+          "id": "consultar",
+          "label": "Preguntar si alguien sigue mirando el reloj",
+          "next": "pregunta_consulta",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "problema",
+          "label": "Preguntar qué problema queda por resolver",
+          "next": "pregunta_final",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "pilas",
+          "label": "Comprar pilas y hacerlo funcionar",
+          "next": "poner_pilas",
+          "actionType": "actuar"
+        },
+        {
+          "id": "decision",
+          "label": "Volver a la decisión sobre el reloj",
+          "next": "pregunta_final",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -345,12 +736,30 @@
       "art": "📅",
       "text": "Dejó de ser necesario cuando las llamadas y la coordinación empezaron a gestionarse con herramientas que muestran disponibilidad y zona horaria.\n\nNadie retiró el reloj. Simplemente dejó de tener una razón clara para estar allí.",
       "memoryAdd": [
-        { "id": "inercia", "text": "La función desapareció gradualmente, pero el objeto permaneció por inercia" }
+        {
+          "id": "inercia",
+          "text": "La función desapareció gradualmente, pero el objeto permaneció por inercia"
+        }
       ],
       "options": [
-        { "id": "presente", "label": "Preguntar quién lo usa hoy", "next": "pregunta_consulta", "actionType": "preguntar" },
-        { "id": "pared", "label": "Preguntar qué problema queda en la pared", "next": "pregunta_final", "actionType": "preguntar" },
-        { "id": "pilas", "label": "Comprar pilas", "next": "poner_pilas", "actionType": "actuar" }
+        {
+          "id": "presente",
+          "label": "Preguntar quién lo usa hoy",
+          "next": "pregunta_consulta",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "pared",
+          "label": "Preguntar qué problema queda en la pared",
+          "next": "pregunta_final",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "pilas",
+          "label": "Comprar pilas",
+          "next": "poner_pilas",
+          "actionType": "actuar"
+        }
       ]
     },
     {
@@ -360,10 +769,30 @@
       "art": "💬",
       "text": "Nadie puede decir quién lo consulta exactamente.\n\nLas respuestas son:\n\n«A veces.»\n«Creo que sí.»\n«Sería raro no tenerlo.»",
       "options": [
-        { "id": "aceptar", "label": "Tomar esas respuestas como prueba suficiente", "next": "decision_nostalgia", "actionType": "decidir" },
-        { "id": "persona", "label": "Preguntar por una persona concreta", "next": "consulta_persona", "actionType": "preguntar" },
-        { "id": "retirar", "label": "Preguntar qué pasa si lo retiramos", "next": "pregunta_final", "actionType": "preguntar" },
-        { "id": "volver", "label": "Volver a la función actual", "next": "funcion_actual", "actionType": "decidir" }
+        {
+          "id": "aceptar",
+          "label": "Tomar esas respuestas como prueba suficiente",
+          "next": "decision_nostalgia",
+          "actionType": "decidir"
+        },
+        {
+          "id": "persona",
+          "label": "Preguntar por una persona concreta",
+          "next": "consulta_persona",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "retirar",
+          "label": "Preguntar qué pasa si lo retiramos",
+          "next": "pregunta_final",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "volver",
+          "label": "Volver a la función actual",
+          "next": "funcion_actual",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -373,12 +802,30 @@
       "art": "🔦",
       "text": "Preguntan por una persona concreta.\n\nNadie aparece.\n\nEl reloj tenía usuarios imaginarios, pero no usuarios identificables.",
       "memoryAdd": [
-        { "id": "sin-usuarios", "text": "No aparece una persona concreta que dependa del reloj" }
+        {
+          "id": "sin-usuarios",
+          "text": "No aparece una persona concreta que dependa del reloj"
+        }
       ],
       "options": [
-        { "id": "retirar", "label": "Preguntar qué pasa si lo retiramos", "next": "pregunta_final", "actionType": "preguntar" },
-        { "id": "nostalgia", "label": "Dejarlo por si alguien lo extraña", "next": "decision_nostalgia", "actionType": "decidir" },
-        { "id": "volver", "label": "Volver a investigar", "next": "funcion_actual", "actionType": "decidir" }
+        {
+          "id": "retirar",
+          "label": "Preguntar qué pasa si lo retiramos",
+          "next": "pregunta_final",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "nostalgia",
+          "label": "Dejarlo por si alguien lo extraña",
+          "next": "decision_nostalgia",
+          "actionType": "decidir"
+        },
+        {
+          "id": "volver",
+          "label": "Volver a investigar",
+          "next": "funcion_actual",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -388,13 +835,36 @@
       "art": "🔋",
       "text": "Compran pilas.\n\nEl reloj vuelve a funcionar, pero muestra una hora incorrecta porque nadie lo configuró.\n\nAdemás, sigue parcialmente tapado por la viga.",
       "memoryAdd": [
-        { "id": "funciona-no-necesario", "text": "El reloj puede funcionar físicamente, pero eso no demuestra que cumpla una función necesaria" }
+        {
+          "id": "funciona-no-necesario",
+          "text": "El reloj puede funcionar físicamente, pero eso no demuestra que cumpla una función necesaria"
+        }
       ],
       "options": [
-        { "id": "configurar", "label": "Configurar la hora y dejarlo donde está", "next": "reloj_funciona", "actionType": "actuar" },
-        { "id": "mover", "label": "Moverlo para que se vea completo", "next": "mover_reloj", "actionType": "observar" },
-        { "id": "preguntar", "label": "Preguntar si alguien necesita esa hora", "next": "pregunta_consulta", "actionType": "preguntar" },
-        { "id": "volver", "label": "Volver a la decisión sobre el reloj", "next": "pregunta_final", "actionType": "decidir" }
+        {
+          "id": "configurar",
+          "label": "Configurar la hora y dejarlo donde está",
+          "next": "reloj_funciona",
+          "actionType": "actuar"
+        },
+        {
+          "id": "mover",
+          "label": "Moverlo para que se vea completo",
+          "next": "mover_reloj",
+          "actionType": "observar"
+        },
+        {
+          "id": "preguntar",
+          "label": "Preguntar si alguien necesita esa hora",
+          "next": "pregunta_consulta",
+          "actionType": "preguntar"
+        },
+        {
+          "id": "volver",
+          "label": "Volver a la decisión sobre el reloj",
+          "next": "pregunta_final",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -404,9 +874,24 @@
       "art": "🕛",
       "text": "El reloj muestra la hora correcta.\n\nLa viga sigue tapándolo.\n\nLa pared sigue viéndose mal.\n\nLa función original ya está resuelta en otro sistema.",
       "options": [
-        { "id": "jefe", "label": "Esperar al jefe", "next": "jefe_funciona", "actionType": "broma" },
-        { "id": "mover", "label": "Moverlo para que se vea completo", "next": "mover_reloj", "actionType": "observar" },
-        { "id": "retirar", "label": "Preguntar si todavía hace falta", "next": "pregunta_final", "actionType": "preguntar" }
+        {
+          "id": "jefe",
+          "label": "Esperar al jefe",
+          "next": "jefe_funciona",
+          "actionType": "broma"
+        },
+        {
+          "id": "mover",
+          "label": "Moverlo para que se vea completo",
+          "next": "mover_reloj",
+          "actionType": "observar"
+        },
+        {
+          "id": "retirar",
+          "label": "Preguntar si todavía hace falta",
+          "next": "pregunta_final",
+          "actionType": "preguntar"
+        }
       ]
     },
     {
@@ -416,7 +901,12 @@
       "art": "🧍",
       "text": "El jefe regresa.\n\n«¿Ya está?»\n\nEl reloj funciona, pero sigue tapado y la pared sigue horrible.\n\nEl equipo descubre que arreglar una propiedad del objeto no equivale a resolver el encargo.",
       "options": [
-        { "id": "volver", "label": "Volver a la decisión", "next": "pregunta_final", "actionType": "decidir" }
+        {
+          "id": "volver",
+          "label": "Volver a la decisión",
+          "next": "pregunta_final",
+          "actionType": "decidir"
+        }
       ]
     },
     {
@@ -426,10 +916,30 @@
       "art": "🏺",
       "text": "Algunas personas se quejan:\n\n«Es una reliquia.»\n«Forma parte de la memoria de la oficina.»\n«No deberíamos quitar nuestra historia.»\n\nEl jefe también parece cansado de recibir respuestas distintas.",
       "options": [
-        { "id": "dejar", "label": "Dejarlo donde está por nostalgia", "next": "final_dejar", "actionType": "decidir" },
-        { "id": "regalar", "label": "Retirarlo y regalarlo a quien quiere conservarlo", "next": "final_regalar", "actionType": "decidir" },
-        { "id": "guardar", "label": "Reparar la pared y guardarlo con su historia", "next": "final_guardar", "actionType": "decidir" },
-        { "id": "preguntar", "label": "Preguntar qué problema sigue resolviendo", "next": "pregunta_final", "actionType": "preguntar" }
+        {
+          "id": "dejar",
+          "label": "Dejarlo donde está por nostalgia",
+          "next": "final_dejar",
+          "actionType": "decidir"
+        },
+        {
+          "id": "regalar",
+          "label": "Retirarlo y regalarlo a quien quiere conservarlo",
+          "next": "final_regalar",
+          "actionType": "decidir"
+        },
+        {
+          "id": "guardar",
+          "label": "Reparar la pared y guardarlo con su historia",
+          "next": "final_guardar",
+          "actionType": "decidir"
+        },
+        {
+          "id": "preguntar",
+          "label": "Preguntar qué problema sigue resolviendo",
+          "next": "pregunta_final",
+          "actionType": "preguntar"
+        }
       ]
     },
     {
@@ -439,10 +949,30 @@
       "art": "🧩",
       "text": "Ya sabemos que la viga sostiene el techo, que el reloj ocultaba una instalación antigua y que su función original se trasladó a Teams.\n\nEl reloj no tiene una necesidad actual demostrada y la pared sí necesita reparación.\n\nEl jefe pidió que el reloj se viera mejor.\n\n¿Qué problema estamos resolviendo realmente?",
       "options": [
-        { "id": "pared", "label": "Que la pared deje de verse mal", "next": "decision_final", "actionType": "decidir" },
-        { "id": "funcion", "label": "Que vuelva a existir una herramienta para consultar la hora de España", "next": "decision_funcion", "actionType": "decidir" },
-        { "id": "memoria", "label": "Que la oficina conserve su historia", "next": "decision_nostalgia", "actionType": "decidir" },
-        { "id": "duda", "label": "Todavía no estamos seguros", "next": "pregunta_consulta", "actionType": "preguntar" }
+        {
+          "id": "pared",
+          "label": "Que la pared deje de verse mal",
+          "next": "decision_final",
+          "actionType": "decidir"
+        },
+        {
+          "id": "funcion",
+          "label": "Que vuelva a existir una herramienta para consultar la hora de España",
+          "next": "decision_funcion",
+          "actionType": "decidir"
+        },
+        {
+          "id": "memoria",
+          "label": "Que la oficina conserve su historia",
+          "next": "decision_nostalgia",
+          "actionType": "decidir"
+        },
+        {
+          "id": "duda",
+          "label": "Todavía no estamos seguros",
+          "next": "pregunta_consulta",
+          "actionType": "preguntar"
+        }
       ]
     },
     {
@@ -452,10 +982,30 @@
       "art": "🛠️",
       "text": "El equipo ya no necesita salvar el reloj para resolver el problema.\n\nLa viga no se toca.\n\nLa instalación antigua debe revisarse y el agujero debe repararse.\n\nLa memoria puede conservarse sin mantener el objeto como solución activa.",
       "options": [
-        { "id": "retirar_reparar", "label": "Retirar el reloj y reparar la pared", "next": "final_retirar", "actionType": "decidir" },
-        { "id": "guardar_historia", "label": "Retirarlo, reparar la pared y conservar su historia", "next": "final_guardar", "actionType": "decidir" },
-        { "id": "mantener", "label": "Dejarlo donde está porque todavía puede servir", "next": "final_dejar", "actionType": "decidir" },
-        { "id": "reemplazar", "label": "Reemplazarlo por un reloj nuevo", "next": "final_reemplazar", "actionType": "decidir" }
+        {
+          "id": "retirar_reparar",
+          "label": "Retirar el reloj y reparar la pared",
+          "next": "final_retirar",
+          "actionType": "decidir"
+        },
+        {
+          "id": "guardar_historia",
+          "label": "Retirarlo, reparar la pared y conservar su historia",
+          "next": "final_guardar",
+          "actionType": "decidir"
+        },
+        {
+          "id": "mantener",
+          "label": "Dejarlo donde está porque todavía puede servir",
+          "next": "final_dejar",
+          "actionType": "decidir"
+        },
+        {
+          "id": "reemplazar",
+          "label": "Reemplazarlo por un reloj nuevo",
+          "next": "final_reemplazar",
+          "actionType": "decidir"
+        }
       ]
     },
     {

@@ -21,7 +21,7 @@ export function MemoryPanel({ game }: { game: Game }) {
           Todavía nada. Lo que el equipo descubra quedará anotado aquí.
         </p>
       ) : (
-        <ul className="max-h-56 space-y-1.5 overflow-y-auto px-3 py-2.5 lg:max-h-none">
+        <ul className="max-h-44 space-y-1.5 overflow-y-auto px-3 py-2.5">
           {memory.map((fact, index) => (
             <li
               key={fact.id}

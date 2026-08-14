@@ -2,50 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Tema único: azules industriales. Fondo de acero profundo, superficies
+ * azul-grafito y un azul brillante como color de acción. Los tokens siguen
+ * la convención de shadcn para que todos los componentes lo hereden.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --background: 214 35% 8%;
+    --foreground: 210 25% 93%;
+    --card: 214 30% 11%;
+    --card-foreground: 210 25% 93%;
+    --popover: 214 30% 10%;
+    --popover-foreground: 210 25% 93%;
+    --primary: 206 92% 60%;
+    --primary-foreground: 214 45% 10%;
+    --secondary: 213 26% 17%;
+    --secondary-foreground: 208 30% 86%;
+    --muted: 213 25% 15%;
+    --muted-foreground: 211 16% 64%;
+    --accent: 211 30% 21%;
+    --accent-foreground: 206 85% 82%;
+    --destructive: 2 68% 56%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
+    --border: 213 24% 20%;
+    --input: 213 24% 26%;
+    --ring: 206 92% 60%;
     --radius: 0.625rem;
-  }
-
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
   }
 }
 

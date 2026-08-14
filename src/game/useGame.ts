@@ -64,7 +64,15 @@ export function useGame(displayName: string, role: RoomRole) {
   const joinedAt = useMemo(() => persistentJoinedAt(role), [role])
 
   const [state, setState] = useState<GameState>(() => initialState(story, Date.now()))
-  const [myVote, setMyVote] = useState<string | null>(null)
+  /**
+   * El voto propio viaja atado a su ronda (`key`). La presencia sólo lo
+   * publica si la ronda coincide con el estado actual: sin esto, al cambiar
+   * de escena había un instante en que el voto viejo salía con la clave
+   * nueva, el motor creía que ya habían votado todos y acortaba la votación.
+   */
+  const [myVoteEntry, setMyVoteEntry] = useState<{ key: string; optionId: string } | null>(
+    null
+  )
   const [now, setNow] = useState(() => Date.now())
 
   const stateRef = useRef(state)
@@ -77,10 +85,12 @@ export function useGame(displayName: string, role: RoomRole) {
   }, [])
 
   const voteKey = `${state.sceneId}#${state.round}`
+  const myVote = myVoteEntry?.optionId ?? null
+  const publishedVote = myVoteEntry?.key === voteKey ? myVoteEntry.optionId : null
 
   const presence = useMemo<RoomPresence>(
-    () => ({ pid, name: displayName, role, joinedAt, vote: myVote, voteKey }),
-    [pid, displayName, role, joinedAt, myVote, voteKey]
+    () => ({ pid, name: displayName, role, joinedAt, vote: publishedVote, voteKey }),
+    [pid, displayName, role, joinedAt, publishedVote, voteKey]
   )
 
   /**
@@ -148,15 +158,23 @@ export function useGame(displayName: string, role: RoomRole) {
     [sendState]
   )
 
-  // Al cambiar de escena o ronda se limpia el voto propio.
-  const roundKeyRef = useRef(voteKey)
+  /**
+   * Cambio de escena → el voto se limpia. Cambio de RONDA en la misma escena
+   * → el voto se CONSERVA re-atándolo a la ronda nueva. Sin esto, un voto
+   * emitido justo cuando el anfitrión cerraba la ronda llegaba tarde, la
+   * ronda se repetía "sin votos" y el voto del jugador desaparecía en
+   * silencio: el clásico «voté y no se marcó».
+   */
   useEffect(() => {
-    const key = `${state.sceneId}#${state.round}`
-    if (roundKeyRef.current !== key) {
-      roundKeyRef.current = key
-      setMyVote(null)
-    }
-  }, [state.sceneId, state.round])
+    setMyVoteEntry((current) => {
+      if (!current || current.key === voteKey) return current
+      const previousScene = current.key.split('#')[0]
+      if (previousScene !== state.sceneId) return null
+      // En un desempate sólo sobreviven los votos a opciones empatadas.
+      if (state.tiedOptions && !state.tiedOptions.includes(current.optionId)) return null
+      return { key: voteKey, optionId: current.optionId }
+    })
+  }, [voteKey, state.sceneId, state.tiedOptions])
 
   const scene = story.scenes[state.sceneId] ?? null
 
@@ -240,7 +258,8 @@ export function useGame(displayName: string, role: RoomRole) {
       if (!scene) return
       const allowed = votableOptions(story, stateRef.current, scene)
       if (!allowed.some((option) => option.id === optionId)) return
-      setMyVote(optionId)
+      const current = stateRef.current
+      setMyVoteEntry({ key: `${current.sceneId}#${current.round}`, optionId })
     },
     [state.phase, role, scene]
   )

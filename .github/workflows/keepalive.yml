@@ -1,0 +1,21 @@
+name: Mantener Supabase despierto
+
+# Los proyectos gratuitos de Supabase se pausan tras días sin tráfico. Este
+# ping periódico cuenta como actividad y evita que la sala amanezca caída el
+# día de la charla. La anon key es pública por diseño (viaja en cada bundle).
+on:
+  schedule:
+    - cron: '17 */12 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping a Supabase
+        run: |
+          curl -fsS -m 20 -o /dev/null -w "Supabase HTTP %{http_code}\n" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsYm92bWllYnF2dWtndnJjcXl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2Mjg4ODIsImV4cCI6MjEwMjIwNDg4Mn0.pjszjL2BFFavC5PyuV5fSYQPfoN0ubD5IYHWTkvCegk" \
+            "https://tlbovmiebqvukgvrcqyu.supabase.co/rest/v1/"

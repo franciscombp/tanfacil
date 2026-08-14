@@ -156,24 +156,25 @@ export function GameView({
         </div>
       )}
 
-      {/* ESCENA + OPCIONES, con la memoria siempre visible al lado */}
+      {/* IMAGEN a la izquierda, OPCIONES a la derecha: nada queda bajo el pliegue */}
       <main className="relative min-h-0 flex-1 overflow-y-auto">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--muted))_0%,hsl(var(--background))_65%)]"
         />
-        <div className="relative mx-auto grid min-h-full w-full max-w-6xl gap-5 px-4 py-6 lg:grid-cols-[1fr_17rem]">
-          <div className="flex min-w-0 flex-col items-center gap-5">
+        <div className="relative mx-auto grid min-h-full w-full max-w-7xl gap-5 px-4 py-5 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,25rem)] lg:items-start">
+          <div className="flex min-w-0 flex-col items-center gap-3">
             <Stage scene={scene} />
-            {isEnding ? <SummaryPanel game={game} /> : <OptionsGrid game={game} />}
-            {!isEnding && (
-              <div className="mt-auto w-full pt-2">
-                <VoteStatusBar game={game} />
-              </div>
-            )}
+            {isEnding && <SummaryPanel game={game} />}
           </div>
 
-          <div className="flex flex-col">
+          <div className="flex min-h-0 flex-col gap-3 lg:sticky lg:top-0 lg:max-h-[calc(100vh-4rem)]">
+            {!isEnding && (
+              <>
+                <OptionsGrid game={game} />
+                <VoteStatusBar game={game} />
+              </>
+            )}
             <MemoryPanel game={game} />
           </div>
         </div>

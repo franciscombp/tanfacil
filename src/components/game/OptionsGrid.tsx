@@ -68,7 +68,7 @@ export function OptionsGrid({ game }: { game: Game }) {
         value={myVote ?? ''}
         onValueChange={vote}
         disabled={phase !== 'voting' || isAdmin}
-        className="gap-3"
+        className="gap-2.5 sm:grid-cols-1"
       >
         {options.map((option, index) => {
           const count = voteCounts[option.id] ?? 0
@@ -99,7 +99,7 @@ export function OptionsGrid({ game }: { game: Game }) {
               count={count}
               share={totalCount > 0 ? (count / totalCount) * 100 : 0}
               winner={revealed && winnerOptionId === option.id}
-              className="min-h-16 animate-fade-up p-4 text-base"
+              className="min-h-14 animate-fade-up p-3.5 text-[15px]"
               style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'backwards' }}
             />
           )
