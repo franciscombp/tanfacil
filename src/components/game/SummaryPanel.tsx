@@ -1,5 +1,6 @@
 import type { Game } from '@/game/useGame'
 import { formatDuration } from '@/engine/story'
+import { enParrafos } from '@/lib/utils'
 
 /**
  * Cierre de la experiencia, según la especificación: lo que el equipo tuvo
@@ -12,13 +13,23 @@ export function SummaryPanel({ game }: { game: Game }) {
   const closing = story.closing
   const total = metrics.timeToConclusion ?? metrics.elapsedSeconds
 
+  /*
+   * El desenlace ocupa el mismo hueco de columna que la memoria en la pantalla
+   * proyectada: dejarlo en tamaños fijos bajo un título de 50px era tener dos
+   * sistemas tipográficos conviviendo. `closing.intro` sí lleva dobles saltos,
+   * así que usa el mismo `enParrafos` y el mismo hueco que el relato.
+   */
   return (
-    <div className="w-full max-w-2xl animate-fade-up space-y-5 rounded-xl border bg-card/60 p-6 text-center">
-      <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-        {closing.intro}
-      </p>
+    <div className="w-full max-w-[34em] animate-fade-up space-y-hueco-150 rounded-xl border bg-card/60 p-hueco-150 text-center">
+      <div className="text-cuerpo text-foreground [&>p+p]:mt-[0.6em]">
+        {enParrafos(closing.intro).map((parrafo, i) => (
+          <p key={i} className="whitespace-pre-line">
+            {parrafo}
+          </p>
+        ))}
+      </div>
 
-      <ul className="mx-auto max-w-md space-y-1 text-left text-sm">
+      <ul className="mx-auto max-w-[30em] space-y-hueco-50 text-left text-apoyo">
         {closing.discoveries.map((line) => (
           <li key={line}>
             <span className="mr-1.5 text-muted-foreground">—</span>
@@ -27,19 +38,19 @@ export function SummaryPanel({ game }: { game: Game }) {
         ))}
       </ul>
 
-      <p className="text-balance font-medium leading-relaxed">{closing.phrase}</p>
+      <p className="text-balance text-accion font-semibold">{closing.phrase}</p>
 
-      <div className="border-t pt-4">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+      <div className="border-t pt-hueco">
+        <p className="text-rotulo uppercase text-muted-foreground">
           {closing.timeLabel}
         </p>
-        <p className="font-mono text-4xl font-semibold tabular-nums">
+        <p className="mt-hueco-50 font-mono text-cifra font-semibold tracking-normal tabular-nums">
           {formatDuration(total)}
         </p>
       </div>
 
       {role === 'player' && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-rotulo normal-case tracking-normal text-muted-foreground">
           El facilitador puede volver a empezar la partida.
         </p>
       )}

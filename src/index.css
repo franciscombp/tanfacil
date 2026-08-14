@@ -1,9 +1,17 @@
+/*
+ * Aquí estaba la razón de que no hubiera familia elegida. Este bloque la
+ * declaraba en `:root` (especificidad 0,1,0) frente al `html` del preflight
+ * (0,0,1), y además `main.tsx` importa este archivo DESPUÉS de `globals.css`:
+ * ganaba por las dos cosas y anulaba cualquier familia del tema. No faltaba
+ * una fuente; la configuración no podía imponerla. Ahora la declara
+ * `tailwind.config.js` y la aplica `body { @apply font-sans }`.
+ *
+ * Se retira también el suavizado en escala de grises: adelgaza los astiles del
+ * texto claro sobre fondo oscuro. En la mano no se nota; proyectado, adelgazar
+ * es perder trazo justo donde no sobra.
+ */
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
 }
 
 html,

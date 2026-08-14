@@ -4,7 +4,13 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 [&_svg]:size-3',
+  /*
+   * El tamaño baja a la base a propósito: un `text-xs` aquí gana a un
+   * `text-rotulo` pasado por `className`, porque Tailwind emite `.text-xs`
+   * después de `.text-rotulo` por orden alfabético. Con él dentro, las
+   * insignias se quedaban en 12px fijos a 1920 dijera lo que dijera la escala.
+   */
+  'inline-flex items-center gap-1 rounded-full border px-hueco-50 py-[0.15em] text-rotulo font-semibold uppercase transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 [&_svg]:size-[1.1em]',
   {
     variants: {
       variant: {

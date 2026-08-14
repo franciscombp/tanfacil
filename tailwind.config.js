@@ -4,6 +4,74 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      /*
+       * ESCALA DE SALA. Seis pasos, razón 1,25, anclados en el cuerpo del
+       * relato (`--paso-0`, fluido). Cada nombre es un PAPEL, no un tamaño,
+       * para que ningún par de jerarquías vuelva a compartir medida.
+       *
+       * El interlineado y el tracking viajan dentro del token: no se vuelve a
+       * escribir un `leading-*` ni un `tracking-*` suelto salvo donde se anula
+       * a propósito. Ojo: Tailwind emite las font-size por orden alfabético de
+       * clase, así que `.text-xs` sale DESPUÉS de `.text-rotulo` y le gana si
+       * conviven; por eso hay que quitar los `text-xs`/`text-sm` de las bases,
+       * no solo taparlos.
+       */
+      fontSize: {
+        rotulo: ['var(--paso-menos2)', { lineHeight: '1.35', letterSpacing: '0.09em' }],
+        apoyo: ['var(--paso-menos1)', { lineHeight: '1.45' }],
+        cuerpo: ['var(--paso-0)', { lineHeight: '1.55' }],
+        accion: ['var(--paso-1)', { lineHeight: '1.25' }],
+        cifra: ['var(--paso-2)', { lineHeight: '1', letterSpacing: '-0.015em' }],
+        titulo: ['var(--paso-3)', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+      },
+      /*
+       * HUECOS ESTRUCTURALES: 0,62 del cuerpo, pero nunca más de lo que la
+       * altura de la ventana puede pagar. A partir de `lg` el layout está
+       * clavado a la ventana, y un espaciado que crece sólo con el ancho
+       * acaba comiéndose el relato que dice proteger.
+       */
+      spacing: {
+        'hueco-25': 'calc(var(--hueco) * 0.25)',
+        'hueco-50': 'calc(var(--hueco) * 0.5)',
+        'hueco-75': 'calc(var(--hueco) * 0.75)',
+        hueco: 'var(--hueco)',
+        'hueco-150': 'calc(var(--hueco) * 1.5)',
+        'hueco-200': 'calc(var(--hueco) * 2)',
+      },
+      /*
+       * Pilas del sistema. No lidera con `-apple-system`: en Windows no
+       * resuelve y en macOS fija la variante antigua. Las familias de emoji
+       * al final son obligatorias: `Stage` pinta `scene.art` heredando de body.
+       */
+      fontFamily: {
+        sans: [
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          '"Segoe UI Variable Text"',
+          '"Segoe UI"',
+          'Roboto',
+          '"Noto Sans"',
+          '"Liberation Sans"',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+          '"Apple Color Emoji"',
+          '"Segoe UI Emoji"',
+          '"Noto Color Emoji"',
+        ],
+        mono: [
+          'ui-monospace',
+          '"SF Mono"',
+          '"Cascadia Mono"',
+          '"Segoe UI Mono"',
+          '"Roboto Mono"',
+          'Menlo',
+          'Consolas',
+          '"Liberation Mono"',
+          'monospace',
+        ],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

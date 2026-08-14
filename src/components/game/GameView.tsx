@@ -92,7 +92,7 @@ export function GameView({
           key={scene.id}
           className="pointer-events-none fixed inset-0 z-50 grid animate-curtain place-items-center bg-background"
         >
-          <p className="animate-pulse-soft text-sm uppercase tracking-[0.3em] text-muted-foreground">
+          <p className="animate-pulse-soft text-rotulo uppercase tracking-[0.3em] text-muted-foreground lg:text-apoyo">
             {scene.type === 'detour'
               ? 'Consecuencia'
               : isEnding
@@ -105,7 +105,12 @@ export function GameView({
       {/* LAS 12:00, sin drama */}
       {noonNotice && (
         <div className="pointer-events-none fixed inset-x-0 top-16 z-40 flex justify-center px-4">
-          <p className="max-w-md animate-fade-up whitespace-pre-line rounded-lg border bg-card/95 px-5 py-3 text-center text-sm shadow-xl">
+          {/* El aviso de las 12:00 es la broma central de la charla: es texto
+              de la historia proyectado, no chrome. `story.noon` sólo tiene
+              saltos SIMPLES (comprobado en el JSON), así que aquí
+              `whitespace-pre-line` es exactamente lo correcto y se conserva:
+              son tres líneas de un bloque, no tres párrafos. */}
+          <p className="max-w-[34em] animate-fade-up whitespace-pre-line rounded-lg border bg-card/95 px-hueco-150 py-hueco text-center text-cuerpo shadow-xl">
             {story.noon}
           </p>
         </div>
@@ -121,12 +126,12 @@ export function GameView({
           <>
             <Badge
               variant="secondary"
-              className="font-mono"
+              className="font-mono tracking-normal tabular-nums"
               title="La hora de la historia. Pasar de las 12:00 no penaliza nada."
             >
               <Clock3 /> {storyClock(story, elapsedSeconds)}
             </Badge>
-            <span className="hidden truncate text-xs text-muted-foreground sm:inline">
+            <span className="hidden truncate text-rotulo normal-case tracking-normal text-muted-foreground sm:inline">
               {pastDeadline ? 'Son más de las 12:00 y el jefe no aparece' : story.premise}
             </span>
           </>
@@ -134,7 +139,7 @@ export function GameView({
 
         <div className="ml-auto flex items-center gap-2">
           <span
-            className="flex items-center gap-1 text-xs text-muted-foreground"
+            className="flex items-center gap-1 text-rotulo text-muted-foreground"
             title={
               status === 'connected'
                 ? 'Sincronizado con la sala'
@@ -168,7 +173,7 @@ export function GameView({
       </header>
 
       {status === 'offline' && (
-        <div className="shrink-0 border-b bg-destructive/10 px-4 py-1.5 text-center text-xs text-destructive">
+        <div className="shrink-0 border-b bg-destructive/10 px-hueco py-hueco-25 text-center text-rotulo normal-case tracking-normal text-destructive">
           Sin conexión en vivo: no verás a otros jugadores ni se sincronizará la partida.
         </div>
       )}
@@ -185,10 +190,18 @@ export function GameView({
               aria-hidden
               className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--muted))_0%,hsl(var(--background))_65%)]"
             />
-            <div className="relative mx-auto grid w-full max-w-[100rem] flex-1 gap-5 px-5 py-5 sm:gap-6 sm:px-8 sm:py-6 lg:min-h-0 lg:grid-cols-[minmax(0,1.6fr)_minmax(21rem,1fr)] lg:gap-8 lg:overflow-hidden">
+            {/*
+              1.6fr/1fr dejaba la columna del relato en ~360 px a 1024: con el
+              cuerpo nuevo salían 38 caracteres por línea, por debajo del suelo
+              legible. Dos escalones (1fr a lg, 1.25fr a xl) mantienen la
+              medida entre 50 y 55 caracteres de 1024 a 1920. Y el `py` vertical
+              usa `--hueco`, que tiene techo de altura: a 1080 px de alto no
+              puede comerse el relato.
+            */}
+            <div className="relative mx-auto grid w-full max-w-[100rem] flex-1 gap-hueco-150 px-5 py-hueco-150 sm:px-8 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(23rem,1fr)] lg:gap-hueco-200 lg:py-hueco lg:overflow-hidden xl:grid-cols-[minmax(0,1.25fr)_minmax(24rem,1fr)] 2xl:px-12">
               <Stage scene={scene} />
 
-              <div className="flex flex-col gap-4 lg:min-h-0">
+              <div className="flex flex-col gap-hueco-150 lg:min-h-0">
                 <SceneNarration scene={scene} />
                 {isEnding ? (
                   <SummaryPanel game={game} />
@@ -201,8 +214,8 @@ export function GameView({
 
           {/* ACCIONES: franja propia al pie, dos columnas */}
           {!isEnding && (
-            <footer className="sticky bottom-0 z-30 shrink-0 border-t bg-card/90 px-5 py-3.5 backdrop-blur sm:px-8 sm:py-5 lg:static lg:bg-card/40">
-              <div className="mx-auto w-full max-w-[100rem] space-y-3.5">
+            <footer className="sticky bottom-0 z-30 shrink-0 border-t bg-card/90 px-5 py-hueco backdrop-blur sm:px-8 lg:static lg:bg-card/40 2xl:px-12">
+              <div className="mx-auto w-full max-w-[100rem] space-y-hueco">
                 <OptionsGrid game={game} />
                 <VoteStatusBar game={game} />
               </div>

@@ -84,15 +84,18 @@ export function OptionsGrid({ game }: { game: Game }) {
                 : `Quedan ${voteSecondsLeft}s. Elijan una opción.`
 
   return (
-    <Questionnaire className="w-full gap-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+    <Questionnaire className="w-full">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-hueco-150 gap-y-hueco-25">
         <QuestionnaireQuestion description={description}>
           ¿Qué hacemos?
         </QuestionnaireQuestion>
+        {/* El tracking viaja dentro de `text-rotulo`; en las teclas se anula a
+            propósito, y `tracking-normal` gana porque Tailwind emite
+            letterSpacing después de fontSize. */}
         {canVote && (
-          <p className="hidden text-xs text-muted-foreground lg:block">
-            Teclas <kbd className="rounded border px-1 font-mono">A</kbd>–
-            <kbd className="rounded border px-1 font-mono">D</kbd>
+          <p className="hidden text-rotulo uppercase text-muted-foreground lg:block">
+            Teclas <kbd className="rounded border px-1 font-mono tracking-normal">A</kbd>–
+            <kbd className="rounded border px-1 font-mono tracking-normal">D</kbd>
           </p>
         )}
       </div>
@@ -103,7 +106,7 @@ export function OptionsGrid({ game }: { game: Game }) {
         value={myVote ?? ''}
         onValueChange={vote}
         disabled={phase !== 'voting' || isAdmin}
-        className="grid-cols-2 gap-2.5 sm:gap-3 lg:gap-4"
+        className="grid-cols-2"
       >
         {options.map((option, index) => {
           const count = voteCounts[option.id] ?? 0
@@ -118,24 +121,24 @@ export function OptionsGrid({ game }: { game: Game }) {
                 option.disabled ? 'spent' : option.outOfRunoff ? 'outOfRunoff' : 'active'
               }
               label={
-                <span className="flex flex-col gap-0.5">
-                  <span className="flex flex-wrap items-center gap-2">
+                <span className="flex flex-col gap-[0.15em]">
+                  <span className="flex flex-wrap items-center gap-[0.5em]">
                     <span className={option.disabled ? 'line-through' : ''}>
                       {option.label}
                     </span>
                     {myVote === option.id && !isAdmin && (
-                      <span className="shrink-0 animate-pop rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
+                      <span className="shrink-0 animate-pop rounded-full bg-primary px-hueco-50 py-[0.15em] text-rotulo font-bold uppercase text-primary-foreground">
                         Tu voto
                       </span>
                     )}
                   </span>
                   {option.disabled && (
-                    <span className="text-xs font-normal text-muted-foreground">
+                    <span className="text-rotulo font-normal uppercase text-muted-foreground">
                       Ya intentamos esto
                     </span>
                   )}
                   {option.outOfRunoff && !option.disabled && (
-                    <span className="text-xs font-normal text-muted-foreground">
+                    <span className="text-rotulo font-normal uppercase text-muted-foreground">
                       Fuera del desempate
                     </span>
                   )}
@@ -145,7 +148,10 @@ export function OptionsGrid({ game }: { game: Game }) {
               count={count}
               share={totalCount > 0 ? (count / totalCount) * 100 : 0}
               winner={revealed && winnerOptionId === option.id}
-              className="min-h-[3.5rem] animate-fade-up p-3 sm:min-h-[4.5rem] sm:p-5"
+              // `min-h` sólo donde es un destino táctil real. Desde lg lo
+              // define el contenido (caja de letra + relleno): un min-h fijo
+              // ahí es código muerto y roba altura al relato proyectado.
+              className="min-h-[3.5rem] animate-fade-up sm:min-h-[4.5rem]"
               style={{ animationDelay: `${index * 70}ms`, animationFillMode: 'backwards' }}
             />
           )

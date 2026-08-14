@@ -17,7 +17,7 @@ const Questionnaire = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('flex flex-col gap-4', className)} {...props} />
+  <div ref={ref} className={cn('flex flex-col gap-2 lg:gap-hueco', className)} {...props} />
 ))
 Questionnaire.displayName = 'Questionnaire'
 
@@ -25,10 +25,18 @@ const QuestionnaireQuestion = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { description?: React.ReactNode }
 >(({ className, children, description, ...props }, ref) => (
-  <div ref={ref} className={cn('space-y-0.5', className)} {...props}>
-    <h2 className="text-lg font-semibold leading-none tracking-tight">{children}</h2>
+  /*
+   * «¿Qué hacemos?» es idéntico en las 39 escenas: información cero. Que
+   * compitiera en tamaño con el relato era parte del problema de jerarquía.
+   * Baja a rótulo y libera el tamaño para las opciones, que sí cambian cada
+   * ronda. Fuera `leading-none`: con interlineado 1 se recortaban el «¿» y la
+   * tilde de «Qué». La descripción pierde el gris: es la instrucción viva
+   * («Quedan 18s») y tiene que leerse sin esfuerzo.
+   */
+  <div ref={ref} className={cn('min-w-0', className)} {...props}>
+    <h2 className="text-rotulo font-semibold uppercase text-muted-foreground">{children}</h2>
     {description ? (
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <p className="mt-[0.35em] text-apoyo text-foreground">{description}</p>
     ) : null}
   </div>
 ))
@@ -40,7 +48,7 @@ const QuestionnaireOptions = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadioGroupPrimitive.Root
     ref={ref}
-    className={cn('grid gap-3 sm:grid-cols-2', className)}
+    className={cn('grid gap-2.5 lg:gap-hueco', className)}
     {...props}
   />
 ))
@@ -87,7 +95,10 @@ const QuestionnaireOption = React.forwardRef<
     <RadioGroupPrimitive.Item
       ref={ref}
       className={cn(
-        'group relative flex w-full items-center gap-2.5 overflow-hidden rounded-xl border-2 border-input bg-card p-4 text-left transition-all duration-150 sm:gap-3',
+        // La geometría del botón no se ata al ritmo por debajo de `lg`: en el
+        // teléfono la opción es un destino táctil, no prosa, y el pie ya ocupa
+        // media pantalla. `p-3 gap-2.5` son los valores de hoy.
+        'group relative flex w-full items-center gap-2.5 overflow-hidden rounded-xl border-2 border-input bg-card p-3 text-left transition-all duration-150 lg:gap-hueco-75 lg:border-[3px] lg:p-hueco 2xl:rounded-2xl',
         'hover:-translate-y-0.5 hover:border-primary/60 hover:bg-accent hover:shadow-lg hover:shadow-primary/5',
         'active:translate-y-0 active:scale-[0.99]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -102,7 +113,7 @@ const QuestionnaireOption = React.forwardRef<
         state === 'spent' && 'border-dashed opacity-40',
         state === 'outOfRunoff' && 'opacity-60',
         'data-[state=checked]:border-primary data-[state=checked]:bg-primary/10 data-[state=checked]:shadow-lg data-[state=checked]:shadow-primary/10',
-        winner && 'border-primary ring-2 ring-primary/40',
+        winner && 'border-primary ring-2 ring-primary/40 lg:ring-4',
         className
       )}
       {...props}
@@ -117,7 +128,10 @@ const QuestionnaireOption = React.forwardRef<
         aria-hidden
         className={cn(
           'absolute inset-y-0 left-0 transition-[width] duration-700 ease-out',
-          winner ? 'bg-primary/25' : 'bg-primary/12'
+          // Al 12% la barra daba 1,21:1 sobre la tarjeta: en la sala no
+          // existía. Suben las dos, manteniendo la distancia entre ganadora
+          // y resto.
+          winner ? 'bg-primary/35' : 'bg-primary/20'
         )}
         style={{
           width: revealed ? `${share}%` : '0%',
@@ -129,27 +143,41 @@ const QuestionnaireOption = React.forwardRef<
         <span
           aria-hidden
           className={cn(
-            'relative grid size-7 shrink-0 place-items-center rounded-lg border-2 border-input bg-secondary text-sm font-bold text-secondary-foreground transition-colors sm:size-9 sm:text-base',
+            // Se vota «la B» en voz alta: la letra es la señalización de la
+            // sala. Desde `lg` la caja se mide en em contra su propia letra y
+            // no vuelve a tocarse. Móvil y sm conservan los 28 y 36 px de hoy,
+            // para no romper la rejilla 2x2 del teléfono.
+            'relative grid size-7 shrink-0 place-items-center rounded-lg border-2 border-input bg-secondary text-apoyo font-bold text-secondary-foreground transition-colors sm:size-9 sm:text-cuerpo lg:size-[1.7em] lg:rounded-xl lg:text-accion',
             'group-hover:border-primary/60',
             'group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary group-data-[state=checked]:text-primary-foreground'
           )}
         >
           <span className="group-data-[state=checked]:hidden">{badge}</span>
           <Check
-            className="hidden size-4 animate-pop group-data-[state=checked]:block sm:size-5"
+            className="hidden size-4 animate-pop group-data-[state=checked]:block sm:size-5 lg:size-[0.9em]"
             strokeWidth={3}
           />
         </span>
       ) : null}
 
-      <span className="relative flex-1 text-[13px] font-medium leading-snug sm:text-base">
+      {/*
+        `min-w-0` arregla un recorte, no es cosmética: sin él el suelo
+        min-content de la etiqueta impide que encoja y, como el botón lleva
+        `overflow-hidden`, lo que se recorta en el revelado es el recuento —el
+        número que mira la sala—. A 390 px le pasaba a 48 de las 99 opciones.
+        Semibold y no medium: sobre azul oscuro y proyectado, el peso 500
+        pierde trazo. En el móvil se queda en el tamaño de hoy.
+      */}
+      <span className="relative min-w-0 flex-1 text-pretty text-apoyo font-semibold leading-snug sm:text-cuerpo lg:text-accion lg:leading-tight">
         {label}
       </span>
 
       {revealed ? (
         <span
           className={cn(
-            'relative min-w-8 animate-pop text-right text-xl font-bold tabular-nums',
+            // `shrink-0` por lo mismo que el `min-w-0` de la etiqueta: sin él
+            // esto es lo primero que se lleva por delante el `overflow-hidden`.
+            'relative min-w-[1.6em] shrink-0 animate-pop text-right text-cifra font-bold tabular-nums',
             winner ? 'text-primary' : 'text-muted-foreground'
           )}
         >
@@ -168,7 +196,7 @@ const QuestionnaireFooter = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground',
+      'flex flex-wrap items-center justify-between gap-hueco-75 text-apoyo text-muted-foreground',
       className
     )}
     {...props}

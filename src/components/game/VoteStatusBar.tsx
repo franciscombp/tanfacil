@@ -28,7 +28,7 @@ export function VoteStatusBar({ game }: { game: Game }) {
                 player.absent ? ' · sin conexión' : player.vote ? ' · ya votó' : ' · pensando'
               }`}
               className={[
-                'grid size-8 place-items-center rounded-full border-2 bg-secondary text-xs font-semibold uppercase text-secondary-foreground ring-1 ring-background transition-all',
+                'grid size-8 place-items-center rounded-full border-2 bg-secondary text-rotulo font-semibold uppercase text-secondary-foreground ring-1 ring-background transition-all lg:size-[2.2em]',
                 player.vote
                   ? 'animate-pop border-emerald-500'
                   : 'border-transparent opacity-50',
@@ -40,28 +40,31 @@ export function VoteStatusBar({ game }: { game: Game }) {
             </span>
           ))}
           {rest > 0 && (
-            <span className="grid size-7 place-items-center rounded-full border-2 border-transparent bg-muted text-[11px] font-medium text-muted-foreground ring-1 ring-background">
+            <span className="grid size-7 place-items-center rounded-full border-2 border-transparent bg-muted text-rotulo font-medium text-muted-foreground ring-1 ring-background lg:size-[2em]">
               +{rest}
             </span>
           )}
         </div>
       </div>
 
-      <Progress value={progress} className="h-2 flex-1" />
+      {/* Una barra de 2 px proyectada no la ve nadie: crece con el ritmo. */}
+      <Progress value={progress} className="h-2 flex-1 lg:h-hueco-75" />
 
-      <span className="shrink-0 text-base font-semibold tabular-nums text-foreground/80">
+      {/* Sin `/80`: es un dato que la sala consulta, no hay motivo para lavarlo. */}
+      <span className="shrink-0 text-accion font-semibold tabular-nums text-foreground">
         {votedCount}/{totalCount}
       </span>
 
       {phase === 'voting' && voteSecondsLeft === null && (
-        <span className="shrink-0 text-xs text-muted-foreground">
+        <span className="shrink-0 text-apoyo text-muted-foreground">
           sin prisa
         </span>
       )}
       {phase === 'voting' && voteSecondsLeft !== null && (
         <span
           className={[
-            'w-14 shrink-0 text-right font-mono text-lg font-bold tabular-nums',
+            // `w-14` fijo cortaba la cifra al crecer: el ancho se mide en em.
+            'w-14 shrink-0 text-right font-mono text-cifra font-bold tabular-nums lg:w-[2.6em]',
             voteSecondsLeft <= 10
               ? 'animate-urgent text-destructive'
               : 'text-muted-foreground',
@@ -71,7 +74,7 @@ export function VoteStatusBar({ game }: { game: Game }) {
         </span>
       )}
       {phase === 'reveal' && voteSecondsLeft !== null && (
-        <span className="shrink-0 text-sm text-muted-foreground">
+        <span className="shrink-0 text-apoyo text-muted-foreground">
           Continúa en {voteSecondsLeft}…
         </span>
       )}
