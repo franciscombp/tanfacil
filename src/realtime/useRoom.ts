@@ -27,10 +27,16 @@ export interface RoomPresence {
   joinedAt: number
   /** Voto de la ronda actual (null si no ha votado). */
   vote: string | null
-  /** `sceneId#round` al que corresponde el voto. */
+  /** Clave de la ronda a la que corresponde el voto (ver `voteKeyOf`). */
   voteKey: string
   /** Se le perdió la pista hace poco: móvil en reposo, pestaña de fondo… */
   absent?: boolean
+  /**
+   * Cuándo se publicó esta presencia. Tras una reconexión el servidor puede
+   * tener dos metas del mismo participante hasta que caduca la vieja; sin este
+   * sello la sala se quedaba con la caduca y veía un voto que ya no existe.
+   */
+  trackedAt?: number
 }
 
 /**
@@ -96,6 +102,16 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
   const [retry, setRetry] = useState(0)
   const [connectedAt, setConnectedAt] = useState(0)
 
+  /**
+   * Última vez que llegó algo DE la sala. `status` no basta para saber si
+   * seguimos dentro: ante una caída silenciosa de la red el socket tarda su
+   * heartbeat en darse por muerto, y durante esa ventana un cliente ya aislado
+   * se creía anfitrión y resolvía votaciones con un censo congelado.
+   */
+  const [liveAt, setLiveAt] = useState(0)
+  /** ¿Llegamos a estar dentro alguna vez? Si no, se juega en local. */
+  const [everConnected, setEverConnected] = useState(false)
+
   const channelRef = useRef<RealtimeChannel | null>(null)
   const subscribedRef = useRef(false)
   /** Última vez que se vio a cada participante, para la gracia de ausencia. */
@@ -105,9 +121,13 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
   const onStateRef = useRef(onState)
   onStateRef.current = onState
 
+  /**
+   * El sello se pone aquí, no en el objeto `presence` del caller: allí
+   * cambiaría en cada render y este mismo `track` se dispararía en bucle.
+   */
   const track = useCallback(() => {
     if (!channelRef.current || !subscribedRef.current) return
-    void channelRef.current.track(presenceRef.current)
+    void channelRef.current.track({ ...presenceRef.current, trackedAt: Date.now() })
   }, [])
 
   /** Emite el estado de la partida a toda la sala (lo usa el anfitrión). */
@@ -142,6 +162,11 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
      */
     let disposed = false
 
+    /** Señal de vida: sólo cuenta el tráfico recibido, no el enviado. */
+    const markAlive = () => {
+      if (!disposed) setLiveAt(Date.now())
+    }
+
     const scheduleRejoin = (reason: string) => {
       if (disposed || rejoin) return
       console.info(`[sala] ${reason}: reintentando en ${backoff / 1000}s`)
@@ -155,9 +180,18 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
 
     channel
       .on('presence', { event: 'sync' }, () => {
+        markAlive()
         const state = channel.presenceState<RoomPresence>()
         const list = Object.values(state)
-          .map((entries) => entries[0])
+          // De cada participante, la meta más reciente: tras reconectar
+          // conviven la nueva y la caduca, y la caduca lleva el voto viejo.
+          .map((entries) =>
+            entries.reduce<(typeof entries)[number] | undefined>(
+              (newest, entry) =>
+                !newest || (entry.trackedAt ?? 0) >= (newest.trackedAt ?? 0) ? entry : newest,
+              undefined
+            )
+          )
           .filter((entry): entry is RoomPresence & { presence_ref: string } =>
             Boolean(entry && entry.pid)
           )
@@ -172,6 +206,7 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
         setMembers(withGrace(list, lastSeenRef.current))
       })
       .on('broadcast', { event: STATE_EVENT }, ({ payload }) => {
+        markAlive()
         if (payload) onStateRef.current(payload as GameState)
       })
       .subscribe((subscription) => {
@@ -181,6 +216,8 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
           subscribedRef.current = true
           setStatus('connected')
           setConnectedAt(Date.now())
+          setEverConnected(true)
+          markAlive()
           setRetry(0)
           track()
           return
@@ -289,5 +326,15 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
     }
   }, [])
 
-  return { members, status, connectedAt, sendState, publishPresence: track }
+  return {
+    members,
+    status,
+    connectedAt,
+    /** Epoch ms del último mensaje recibido de la sala (0 = nunca). */
+    liveAt,
+    /** Si nunca se conectó, no hay sala que pisar: se juega en local. */
+    everConnected,
+    sendState,
+    publishPresence: track,
+  }
 }

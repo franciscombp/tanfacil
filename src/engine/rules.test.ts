@@ -11,6 +11,7 @@ import {
   shouldAdopt,
   tickVoting,
   tally,
+  voteKeyOf,
   VOTE_CONFIRM_MS,
 } from './rules'
 import { buildStory } from './story'
@@ -420,5 +421,54 @@ describe('facilitador y métricas', () => {
     const next = applyOption(story, state(), scene, 'preguntar', {}, NOW + 500)
     expect(next.firstInvestigationAt).toBe(NOW + 500)
     expect(next.firstActionAt).toBeNull()
+  })
+})
+
+/**
+ * La clave de la ronda tiene que ser irrepetible en el tiempo. `sceneId#round`
+ * no lo era: reiniciar volvía a `inicio` con ronda 0, los votos anteriores
+ * seguían publicados con esa misma clave y la primera votación de la partida
+ * nueva se resolvía sola con el resultado de la anterior.
+ */
+describe('clave de la ronda', () => {
+  it('reiniciar la partida no hereda la clave de la partida anterior', () => {
+    const antes = state()
+    const despues = initialState(story, NOW + 5000)
+    expect(despues.sceneId).toBe(antes.sceneId)
+    expect(despues.round).toBe(antes.round)
+    expect(voteKeyOf(despues)).not.toBe(voteKeyOf(antes))
+  })
+
+  it('saltar a la escena en la que ya estamos abre una ronda distinta', () => {
+    const antes = state()
+    const saltado = jumpToScene(story, antes, antes.sceneId, NOW + 5000)
+    expect(saltado.sceneId).toBe(antes.sceneId)
+    expect(saltado.round).toBe(0)
+    expect(voteKeyOf(saltado)).not.toBe(voteKeyOf(antes))
+  })
+
+  it('un empate abre una clave nueva, para que nadie figure ya votado', () => {
+    const base = state()
+    const empatado = resolveVote(story, base, scene.options.slice(0, 2), NOW + 1000)
+    expect(empatado.repeatReason).toBe('tie')
+    expect(voteKeyOf(empatado)).not.toBe(voteKeyOf(base))
+  })
+
+  it('avanzar de escena abre una clave nueva', () => {
+    const base = state()
+    const siguiente = applyOption(story, base, scene, 'preguntar', {}, NOW + 1000)
+    expect(voteKeyOf(siguiente)).not.toBe(voteKeyOf(base))
+  })
+
+  it('los votos de la ronda anterior no cuentan en la nueva', () => {
+    const antes = state()
+    const votantes = [
+      { vote: 'actuar', voteKey: voteKeyOf(antes) },
+      { vote: 'actuar', voteKey: voteKeyOf(antes) },
+    ]
+    const reiniciado = initialState(story, NOW + 5000)
+    const ronda = countRound(votantes, voteKeyOf(reiniciado))
+    expect(ronda.votedCount).toBe(0)
+    expect(ronda.everyoneVoted).toBe(false)
   })
 })

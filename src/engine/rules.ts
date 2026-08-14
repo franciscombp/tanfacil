@@ -19,6 +19,7 @@ export function initialState(story: Story, now: number): GameState {
     started: false,
     sceneId: story.startScene,
     round: 0,
+    roundToken: now,
     phase: 'voting',
     deadline: 0,
     winner: null,
@@ -41,6 +42,17 @@ export function initialState(story: Story, now: number): GameState {
     owner: '',
     ownerSince: Number.MAX_SAFE_INTEGER,
   }
+}
+
+/**
+ * La clave de la ronda: a qué votación pertenece un voto.
+ *
+ * Un voto sólo cuenta si su clave coincide con la de la votación abierta. Vive
+ * aquí, y no repetida en la interfaz, porque basta con que las dos fórmulas se
+ * separen un carácter para que ningún voto vuelva a contar nunca.
+ */
+export function voteKeyOf(state: GameState): string {
+  return `${state.sceneId}#${state.round}#${state.roundToken}`
 }
 
 /**
@@ -148,6 +160,7 @@ export function resolveVote(
       ...state,
       phase: 'voting',
       round: state.round + 1,
+      roundToken: now,
       winner: null,
       tiedOptions: null,
       repeatReason: 'no_votes',
@@ -159,6 +172,7 @@ export function resolveVote(
     ...state,
     phase: 'voting',
     round: state.round + 1,
+    roundToken: now,
     winner: null,
     tiedOptions: leaders.map((leader) => leader.id),
     repeatReason: 'tie',
@@ -337,6 +351,7 @@ export function applyOption(
     started: true,
     sceneId: option.next,
     round: 0,
+    roundToken: now,
     phase: 'voting',
     winner: null,
     paused: false,
@@ -372,6 +387,7 @@ export function jumpToScene(
     started: true,
     sceneId,
     round: 0,
+    roundToken: now,
     phase: 'voting',
     winner: null,
     paused: false,

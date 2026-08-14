@@ -94,6 +94,13 @@ export interface GameState {
   sceneId: string
   /** Ronda de votación dentro de la escena; sube al repetirse. */
   round: number
+  /**
+   * Sello de apertura de la votación en curso. `sceneId#round` se repite en el
+   * tiempo —reiniciar la partida vuelve a la escena inicial con ronda 0—, y
+   * entonces los votos de antes seguían publicados con esa misma clave y la
+   * votación nueva se resolvía sola. Con este sello la clave es irrepetible.
+   */
+  roundToken: number
   phase: GamePhase
   /**
    * Fin de la fase actual (epoch ms). 0 = sin contador: la escena se abre así

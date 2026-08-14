@@ -11,6 +11,7 @@ import {
   tally,
   tickVoting,
   votableOptions,
+  voteKeyOf,
 } from '@/engine/rules'
 import type { Fact, GameMetrics, GameState } from '@/engine/types'
 import { useRoom, type RoomPresence, type RoomRole } from '@/realtime/useRoom'
@@ -32,6 +33,15 @@ const HOST_WARMUP_MS = 4000
 
 /** Latido del anfitrión: cubre a quien entra tarde o pierde un broadcast. */
 const HEARTBEAT_MS = 5000
+
+/**
+ * Sin noticias de la sala en este tiempo, se deja de dirigir. Con el keepalive
+ * de presencia cada 20 s, pasar de este margen significa estar de verdad fuera.
+ */
+const STALE_ROOM_MS = 30_000
+
+/** Dispersión de las correcciones, para que no respondan 50 clientes a la vez. */
+const CORRECTION_SPREAD_MS = 800
 
 const bySeniority = (a: RoomPresence, b: RoomPresence) =>
   a.joinedAt - b.joinedAt || a.pid.localeCompare(b.pid)
@@ -86,7 +96,7 @@ export function useGame(displayName: string, role: RoomRole) {
     return () => clearInterval(timer)
   }, [])
 
-  const voteKey = `${state.sceneId}#${state.round}`
+  const voteKey = voteKeyOf(state)
   const myVote = myVoteEntry?.optionId ?? null
   const publishedVote = myVoteEntry?.key === voteKey ? myVoteEntry.optionId : null
 
@@ -103,30 +113,64 @@ export function useGame(displayName: string, role: RoomRole) {
    */
   const sendStateRef = useRef<((state: GameState) => void) | null>(null)
   const lastCorrectionRef = useRef(0)
+  /** Corrección programada pero aún no enviada, por si otro se adelanta. */
+  const pendingFixRef = useRef<{
+    timer: ReturnType<typeof setTimeout>
+    version: number
+    owner: string
+  } | null>(null)
+
+  const cancelPendingFix = () => {
+    if (!pendingFixRef.current) return
+    clearTimeout(pendingFixRef.current.timer)
+    pendingFixRef.current = null
+  }
 
   // Manda la versión más alta y, a igualdad, el anfitrión más antiguo.
   const onState = useCallback((incoming: GameState) => {
     const current = stateRef.current
     if (shouldAdopt(incoming, current)) {
+      cancelPendingFix()
       setState(incoming)
       return
     }
+
+    /*
+     * Si alguien ya corrigió con el mismo estado que yo iba a enviar, callo.
+     * Sin esto, un anfitrión que recarga emite su partida en cero y los ~50
+     * clientes le responden a la vez: el canal descarta mensajes y hay quien
+     * se queda rondas atrás. Con la espera dispersa y esta supresión responden
+     * uno o dos.
+     */
+    const pending = pendingFixRef.current
+    if (pending && incoming.version === pending.version && incoming.owner === pending.owner) {
+      cancelPendingFix()
+      return
+    }
+    if (pending) return
+
     // El otro va por detrás (o es un anfitrión menos antiguo): se le corrige.
     if (incoming.version !== current.version || incoming.owner !== current.owner) {
       const at = Date.now()
-      if (at - lastCorrectionRef.current > 2000) {
-        lastCorrectionRef.current = at
-        sendStateRef.current?.(current)
-      }
+      if (at - lastCorrectionRef.current <= 2000) return
+      const timer = setTimeout(() => {
+        lastCorrectionRef.current = Date.now()
+        pendingFixRef.current = null
+        sendStateRef.current?.(stateRef.current)
+      }, Math.random() * CORRECTION_SPREAD_MS)
+      pendingFixRef.current = { timer, version: current.version, owner: current.owner }
     }
   }, [])
 
-  const { members, status, connectedAt, sendState, publishPresence } = useRoom({
-    channelName: ROOM,
-    pid,
-    presence,
-    onState,
-  })
+  useEffect(() => cancelPendingFix, [])
+
+  const { members, status, connectedAt, liveAt, everConnected, sendState, publishPresence } =
+    useRoom({
+      channelName: ROOM,
+      pid,
+      presence,
+      onState,
+    })
   sendStateRef.current = sendState
 
   /**
@@ -162,14 +206,22 @@ export function useGame(displayName: string, role: RoomRole) {
   )
 
   /**
-   * Ventana de adopción: al conectar con más gente en la sala, el anfitrión
-   * nuevo espera un latido antes de dirigir, para continuar la partida en
-   * curso en vez de pisarla con su estado inicial.
+   * Quién puede dirigir, y cuándo.
+   *
+   * Dos condiciones. La primera: estar de verdad en la sala. Un cliente que
+   * pierde la red conserva el censo y los votos del instante del corte, y si
+   * seguía dirigiendo resolvía la votación contra esa foto vieja; al volver,
+   * su versión ganaba el desempate por antigüedad y la sala entera saltaba a
+   * una escena que nadie había votado. Se mide por tráfico recibido, no por
+   * `status`: ante una caída silenciosa el socket tarda en enterarse. Si nunca
+   * hubo conexión no hay sala que pisar y se juega en local.
+   *
+   * La segunda: al entrar con gente dentro, esperar un latido antes de dirigir,
+   * para continuar la partida en curso en vez de pisarla con el estado inicial.
    */
+  const inRoom = !everConnected || (status === 'connected' && now - liveAt < STALE_ROOM_MS)
   const engineReady =
-    status !== 'connected' ||
-    members.length <= 1 ||
-    now - connectedAt >= HOST_WARMUP_MS
+    inRoom && (members.length <= 1 || now - connectedAt >= HOST_WARMUP_MS)
 
   /** Cambia el estado y lo emite a la sala en el mismo paso. */
   const commit = useCallback(
@@ -266,13 +318,28 @@ export function useGame(displayName: string, role: RoomRole) {
     commit,
   ])
 
-  // Latido del anfitrión: quien entra tarde converge en segundos.
+  /**
+   * Latido del anfitrión: quien entra tarde converge en segundos.
+   *
+   * Nunca se difunde una partida en cero habiendo más gente: un facilitador
+   * que recarga es anfitrión al instante, y emitir su versión 0 provocaba que
+   * la sala entera le respondiera a la vez. Si aún no ha adoptado nada, calla.
+   */
+  // Por ref: el censo cambia a cada rato y el latido no debe reprogramarse.
+  const roomSizeRef = useRef(members.length)
+  roomSizeRef.current = members.length
+
+  const beat = useCallback(() => {
+    if (stateRef.current.version === 0 && roomSizeRef.current > 1) return
+    sendState(stateRef.current)
+  }, [sendState])
+
   useEffect(() => {
     if (!isHost || status !== 'connected') return
-    sendState(stateRef.current)
-    const timer = setInterval(() => sendState(stateRef.current), HEARTBEAT_MS)
+    beat()
+    const timer = setInterval(beat, HEARTBEAT_MS)
     return () => clearInterval(timer)
-  }, [isHost, status, sendState])
+  }, [isHost, status, beat])
 
   // ─── Acciones ────────────────────────────────────────────────────────────
 
@@ -289,8 +356,7 @@ export function useGame(displayName: string, role: RoomRole) {
       if (!scene) return
       const allowed = votableOptions(story, stateRef.current, scene)
       if (!allowed.some((option) => option.id === optionId)) return
-      const current = stateRef.current
-      setMyVoteEntry({ key: `${current.sceneId}#${current.round}`, optionId })
+      setMyVoteEntry({ key: voteKeyOf(stateRef.current), optionId })
     },
     [state.phase, role, scene]
   )
@@ -317,6 +383,7 @@ export function useGame(displayName: string, role: RoomRole) {
       ...current,
       phase: 'voting',
       round: current.round + 1,
+      roundToken: Date.now(),
       winner: null,
       paused: false,
       tiedOptions: null,
