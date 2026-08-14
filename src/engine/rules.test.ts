@@ -7,8 +7,10 @@ import {
   leadersOf,
   optionViews,
   resolveVote,
+  shouldAdopt,
   tickVoting,
   tally,
+  VOTE_CONFIRM_MS,
 } from './rules'
 import { buildStory } from './story'
 import type { GameState } from './types'
@@ -120,17 +122,68 @@ describe('el contador arranca con el primer voto', () => {
     expect(armed?.phase).toBe('voting')
   })
 
-  it('con dos votantes, si votan todos se cierra en el acto', () => {
+  it('al completarse los votos se confirma el recuento antes de cerrar', () => {
     const armed = tickVoting(story, state(), scene, snapshot({ votedCount: 1 }))!
-    const closed = tickVoting(story, armed, scene, {
+    const full = {
       votedCount: 2,
       everyoneVoted: true,
       leaders: [scene.options[0]],
       voteCounts: { actuar: 2 },
       now: NOW + 3000,
+    }
+    // Primer paso: se agenda el cierre, todavía sin resolver.
+    const closing = tickVoting(story, armed, scene, full)!
+    expect(closing.phase).toBe('voting')
+    expect(closing.closingAt).toBe(NOW + 3000 + VOTE_CONFIRM_MS)
+
+    // Pasada la confirmación, se cierra.
+    const closed = tickVoting(story, closing, scene, {
+      ...full,
+      now: closing.closingAt,
     })
     expect(closed?.phase).toBe('reveal')
     expect(closed?.winner).toBe('actuar')
+    expect(closed?.closingAt).toBe(0)
+  })
+
+  it('si aparece alguien sin votar durante la confirmación, no se cierra', () => {
+    const armed = tickVoting(story, state(), scene, snapshot({ votedCount: 1 }))!
+    const closing = tickVoting(story, armed, scene, {
+      votedCount: 2,
+      everyoneVoted: true,
+      leaders: [scene.options[0]],
+      voteCounts: { actuar: 2 },
+      now: NOW + 3000,
+    })!
+    expect(closing.closingAt).toBeGreaterThan(0)
+
+    // Llega la presencia de un tercero que aún no ha votado.
+    const cancelled = tickVoting(story, closing, scene, {
+      votedCount: 2,
+      everyoneVoted: false,
+      leaders: [scene.options[0]],
+      voteCounts: { actuar: 2 },
+      now: NOW + 3200,
+    })
+    expect(cancelled?.closingAt).toBe(0)
+    expect(cancelled?.phase).toBe('voting')
+
+    // Y su voto sí entra en el recuento del cierre posterior.
+    const withThird = tickVoting(story, cancelled!, scene, {
+      votedCount: 3,
+      everyoneVoted: true,
+      leaders: [scene.options[1]],
+      voteCounts: { actuar: 1, preguntar: 2 },
+      now: NOW + 4000,
+    })!
+    const closed = tickVoting(story, withThird, scene, {
+      votedCount: 3,
+      everyoneVoted: true,
+      leaders: [scene.options[1]],
+      voteCounts: { actuar: 1, preguntar: 2 },
+      now: withThird.closingAt,
+    })
+    expect(closed?.winner).toBe('preguntar')
   })
 
   it('si se agota el tiempo sin que voten todos, se cierra igual', () => {
@@ -148,29 +201,36 @@ describe('el contador arranca con el primer voto', () => {
   })
 
   it('jugando solo el revelado es corto pero existe: hay que ver qué se eligió', () => {
-    const solo = tickVoting(story, state(), scene, {
+    const full = {
       votedCount: 1,
       everyoneVoted: true,
       leaders: [scene.options[1]],
       voteCounts: { preguntar: 1 },
       now: NOW,
+    }
+    const closing = tickVoting(story, state(), scene, full)!
+    const solo = tickVoting(story, closing, scene, {
+      ...full,
+      now: closing.closingAt,
     })
     expect(solo?.phase).toBe('reveal')
     expect(solo?.winner).toBe('preguntar')
-    expect(solo?.deadline).toBe(NOW + story.timers.soloRevealSeconds * 1000)
+    expect(solo?.deadline).toBe(closing.closingAt + story.timers.soloRevealSeconds * 1000)
     // Sigue en la escena actual: aún no ha cambiado de diapositiva.
     expect(solo?.sceneId).toBe('inicio')
   })
 
   it('en grupo el revelado dura lo normal', () => {
-    const group = tickVoting(story, state(), scene, {
+    const full = {
       votedCount: 3,
       everyoneVoted: true,
       leaders: [scene.options[0]],
       voteCounts: { actuar: 3 },
       now: NOW,
-    })
-    expect(group?.deadline).toBe(NOW + story.timers.revealSeconds * 1000)
+    }
+    const closing = tickVoting(story, state(), scene, full)!
+    const group = tickVoting(story, closing, scene, { ...full, now: closing.closingAt })
+    expect(group?.deadline).toBe(closing.closingAt + story.timers.revealSeconds * 1000)
   })
 
   it('en pausa no ocurre nada, aunque haya votos', () => {
@@ -185,6 +245,35 @@ describe('el contador arranca con el primer voto', () => {
     expect(repeated.deadline).toBe(0)
     const tied = resolveVote(story, state(), scene.options.slice(0, 2), NOW)
     expect(tied.deadline).toBe(0)
+  })
+})
+
+describe('reconciliación entre anfitriones', () => {
+  const base = () => ({ ...state(), owner: 'p_b', ownerSince: 200, version: 5 })
+
+  it('gana siempre la versión más alta', () => {
+    expect(shouldAdopt({ ...base(), version: 6 }, base())).toBe(true)
+    expect(shouldAdopt({ ...base(), version: 4 }, base())).toBe(false)
+  })
+
+  it('a igualdad de versión manda el anfitrión más antiguo', () => {
+    // Dos clientes que se creyeron anfitrión a la vez: sin desempate, la sala
+    // quedaba partida en dos con la misma versión para siempre.
+    const older = { ...base(), owner: 'p_a', ownerSince: 100 }
+    expect(shouldAdopt(older, base())).toBe(true)
+    const newer = { ...base(), owner: 'p_c', ownerSince: 300 }
+    expect(shouldAdopt(newer, base())).toBe(false)
+  })
+
+  it('con la misma antigüedad desempata el identificador, igual en ambos lados', () => {
+    const a = { ...base(), owner: 'p_a', ownerSince: 200 }
+    const b = { ...base(), owner: 'p_b', ownerSince: 200 }
+    expect(shouldAdopt(a, b)).toBe(true)
+    expect(shouldAdopt(b, a)).toBe(false)
+  })
+
+  it('el mismo emisor no se adopta a sí mismo', () => {
+    expect(shouldAdopt(base(), base())).toBe(false)
   })
 })
 

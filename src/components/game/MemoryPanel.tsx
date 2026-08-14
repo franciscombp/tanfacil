@@ -11,7 +11,7 @@ export function MemoryPanel({ game }: { game: Game }) {
   const { memory, metrics } = game
 
   return (
-    <aside className="flex w-full flex-col rounded-lg border bg-card/60">
+    <aside className="flex min-h-0 w-full shrink-0 flex-col rounded-lg border bg-card/60">
       <p className="flex items-center gap-1.5 border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <NotebookPen className="size-3.5" /> Lo que sabemos
       </p>

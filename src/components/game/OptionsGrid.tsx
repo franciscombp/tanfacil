@@ -67,16 +67,17 @@ export function OptionsGrid({ game }: { game: Game }) {
                 : `Quedan ${voteSecondsLeft}s. Elijan una opción.`
 
   return (
-    <Questionnaire className="w-full">
+    <Questionnaire className="w-full gap-2">
       <QuestionnaireQuestion description={description}>
         ¿Qué hacemos?
       </QuestionnaireQuestion>
 
+      {/* Dos columnas: cuatro opciones caben en dos filas legibles de lejos. */}
       <QuestionnaireOptions
         value={myVote ?? ''}
         onValueChange={vote}
         disabled={phase !== 'voting' || isAdmin}
-        className="gap-2.5 sm:grid-cols-1"
+        className="gap-2.5 sm:grid-cols-2"
       >
         {options.map((option, index) => {
           const count = voteCounts[option.id] ?? 0

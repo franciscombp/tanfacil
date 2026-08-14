@@ -36,8 +36,30 @@ export function initialState(story: Story, now: number): GameState {
     tried: [],
     route: [{ sceneId: story.startScene, at: now }],
     log: [],
+    closingAt: 0,
     version: 0,
+    owner: '',
+    ownerSince: Number.MAX_SAFE_INTEGER,
   }
+}
+
+/**
+ * Cuál de dos estados manda: gana la versión más alta y, a igualdad, el
+ * anfitrión más antiguo.
+ *
+ * Sin este desempate, dos clientes que se creen anfitrión a la vez (porque la
+ * presencia del otro aún no les ha llegado) emiten la misma versión con
+ * contenidos distintos y la sala se parte en dos para siempre: cada mitad
+ * cuenta sólo sus votos y alguien se queda en una pregunta que ya no es la
+ * del grupo.
+ */
+export function shouldAdopt(incoming: GameState, current: GameState): boolean {
+  if (incoming.version !== current.version) return incoming.version > current.version
+  if (incoming.owner === current.owner) return false
+  if (incoming.ownerSince !== current.ownerSince) {
+    return incoming.ownerSince < current.ownerSince
+  }
+  return incoming.owner < current.owner
 }
 
 export interface OptionView extends SceneOption {
@@ -116,6 +138,7 @@ export function resolveVote(
       winner: leaders[0].id,
       repeatReason: null,
       forced: false,
+      closingAt: 0,
       deadline: now + seconds * 1000,
     }
   }
@@ -143,6 +166,13 @@ export function resolveVote(
     deadline: 0,
   }
 }
+
+/**
+ * Margen de confirmación al completarse los votos. Da tiempo a que llegue la
+ * presencia de alguien que aún no aparecía, para no cerrar con un recuento
+ * incompleto.
+ */
+export const VOTE_CONFIRM_MS = 1200
 
 export interface VotingSnapshot {
   votedCount: number
@@ -173,8 +203,20 @@ export function tickVoting(
   if (state.phase !== 'voting' || state.paused) return null
   if (scene.options.length === 0) return null
 
+  // Han votado todos: se confirma el recuento antes de cerrar.
   if (everyoneVoted) {
-    return resolveVote(story, state, leaders, now, votedCount)
+    if (state.closingAt === 0) {
+      return { ...state, closingAt: now + VOTE_CONFIRM_MS }
+    }
+    if (now >= state.closingAt) {
+      return { ...resolveVote(story, state, leaders, now, votedCount), closingAt: 0 }
+    }
+    return null
+  }
+
+  // Apareció alguien que no había votado: el cierre se cancela y se sigue.
+  if (state.closingAt !== 0) {
+    return { ...state, closingAt: 0 }
   }
 
   if (votedCount > 0 && state.deadline === 0) {
@@ -182,7 +224,7 @@ export function tickVoting(
   }
 
   if (state.deadline > 0 && now >= state.deadline) {
-    return resolveVote(story, state, leaders, now)
+    return { ...resolveVote(story, state, leaders, now), closingAt: 0 }
   }
 
   return null
@@ -201,6 +243,7 @@ export function forceOption(
     winner: optionId,
     repeatReason: null,
     forced: true,
+    closingAt: 0,
     deadline: now + story.timers.revealSeconds * 1000,
   }
 }
@@ -255,6 +298,7 @@ export function applyOption(
     tiedOptions: null,
     repeatReason: null,
     forced: false,
+    closingAt: 0,
     deadline: 0,
     memory: addMemory(state.memory, nextScene),
     tried: isDetour && !state.tried.includes(option.next)
@@ -289,6 +333,7 @@ export function jumpToScene(
     tiedOptions: null,
     repeatReason: null,
     forced: false,
+    closingAt: 0,
     deadline: 0,
     memory: addMemory(state.memory, scene),
     solvedAt: state.solvedAt ?? (scene.type === 'ending' ? now : null),

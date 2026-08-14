@@ -120,8 +120,17 @@ export interface GameState {
   tried: string[]
   route: RouteStep[]
   log: DecisionLog[]
+  /**
+   * Cierre en curso: momento (epoch ms) en que se cerrará la votación tras
+   * confirmar que están todos los votos. 0 = no se está cerrando.
+   */
+  closingAt: number
   /** Sube con cada cambio; el estado con versión más alta manda. */
   version: number
+  /** Quién emitió este estado, para desempatar versiones iguales. */
+  owner: string
+  /** Antigüedad de quien lo emitió: manda el anfitrión más antiguo. */
+  ownerSince: number
 }
 
 export interface GameMetrics {

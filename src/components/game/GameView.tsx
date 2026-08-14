@@ -8,6 +8,7 @@ import { pauseUpdates } from '@/lib/useAppVersion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Stage } from './Stage'
+import { SceneNarration } from './SceneNarration'
 import { OptionsGrid } from './OptionsGrid'
 import { VoteStatusBar } from './VoteStatusBar'
 import { MemoryPanel } from './MemoryPanel'
@@ -19,8 +20,9 @@ import { AdminDock } from './AdminDock'
  * La vista de la partida, idéntica para jugadores y facilitador: el admin la
  * proyecta tal cual y sus controles viven en un dock flotante aparte.
  *
- * Cuatro zonas: escena (imagen protagonista), opciones de votación, memoria
- * de lo descubierto y tiempo real informativo (dentro del panel de memoria).
+ * Jerarquía: la imagen manda (columna izquierda), el relato la acompaña a la
+ * derecha con la memoria debajo, y las acciones ocupan una franja propia al
+ * pie, en dos columnas. Nada queda bajo el pliegue.
  */
 export function GameView({
   role,
@@ -104,7 +106,7 @@ export function GameView({
       )}
 
       {/* BARRA SUPERIOR, mínima */}
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
+      <header className="flex h-11 shrink-0 items-center gap-3 border-b px-4">
         {waiting ? (
           <Badge variant="outline" className="uppercase tracking-wide">
             Sala de espera
@@ -165,33 +167,43 @@ export function GameView({
         </div>
       )}
 
-      {/* IMAGEN a la izquierda, OPCIONES a la derecha: nada queda bajo el pliegue */}
-      <main className="relative min-h-0 flex-1 overflow-y-auto">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--muted))_0%,hsl(var(--background))_65%)]"
-        />
-        {waiting ? (
+      {waiting ? (
+        <main className="min-h-0 flex-1 overflow-y-auto">
           <WaitingRoom game={game} />
-        ) : (
-        <div className="relative mx-auto grid min-h-full w-full max-w-7xl gap-5 px-4 py-5 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,25rem)] lg:items-start">
-          <div className="flex min-w-0 flex-col items-center gap-3">
-            <Stage scene={scene} />
-            {isEnding && <SummaryPanel game={game} />}
-          </div>
+        </main>
+      ) : (
+        <>
+          {/* ESCENA: imagen a la izquierda, relato y memoria a la derecha */}
+          <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--muted))_0%,hsl(var(--background))_65%)]"
+            />
+            <div className="relative mx-auto grid min-h-0 w-full max-w-7xl flex-1 gap-4 overflow-y-auto px-4 py-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(20rem,1fr)] lg:overflow-hidden">
+              <Stage scene={scene} />
 
-          <div className="flex min-h-0 flex-col gap-3 lg:sticky lg:top-0 lg:max-h-[calc(100vh-4rem)]">
-            {!isEnding && (
-              <>
+              <div className="flex min-h-0 flex-col gap-3">
+                <SceneNarration scene={scene} />
+                {isEnding ? (
+                  <SummaryPanel game={game} />
+                ) : (
+                  <MemoryPanel game={game} />
+                )}
+              </div>
+            </div>
+          </main>
+
+          {/* ACCIONES: franja propia al pie, dos columnas */}
+          {!isEnding && (
+            <footer className="shrink-0 border-t bg-card/40 px-4 py-3 backdrop-blur">
+              <div className="mx-auto w-full max-w-7xl space-y-2.5">
                 <OptionsGrid game={game} />
                 <VoteStatusBar game={game} />
-              </>
-            )}
-            <MemoryPanel game={game} />
-          </div>
-        </div>
-        )}
-      </main>
+              </div>
+            </footer>
+          )}
+        </>
+      )}
 
       {role === 'admin' && <AdminDock game={game} />}
     </div>

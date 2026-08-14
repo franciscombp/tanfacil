@@ -6,6 +6,7 @@ import {
   jumpToScene,
   leadersOf,
   optionViews,
+  shouldAdopt,
   tally,
   tickVoting,
   votableOptions,
@@ -102,17 +103,19 @@ export function useGame(displayName: string, role: RoomRole) {
   const sendStateRef = useRef<((state: GameState) => void) | null>(null)
   const lastCorrectionRef = useRef(0)
 
-  // Estado entrante: manda la versión más alta, venga de quien venga.
+  // Manda la versión más alta y, a igualdad, el anfitrión más antiguo.
   const onState = useCallback((incoming: GameState) => {
-    if (incoming.version > stateRef.current.version) {
+    const current = stateRef.current
+    if (shouldAdopt(incoming, current)) {
       setState(incoming)
       return
     }
-    if (incoming.version < stateRef.current.version) {
+    // El otro va por detrás (o es un anfitrión menos antiguo): se le corrige.
+    if (incoming.version !== current.version || incoming.owner !== current.owner) {
       const at = Date.now()
       if (at - lastCorrectionRef.current > 2000) {
         lastCorrectionRef.current = at
-        sendStateRef.current?.(stateRef.current)
+        sendStateRef.current?.(current)
       }
     }
   }, [])
@@ -170,11 +173,16 @@ export function useGame(displayName: string, role: RoomRole) {
   /** Cambia el estado y lo emite a la sala en el mismo paso. */
   const commit = useCallback(
     (next: GameState) => {
-      const versioned = { ...next, version: stateRef.current.version + 1 }
+      const versioned = {
+        ...next,
+        version: stateRef.current.version + 1,
+        owner: pid,
+        ownerSince: joinedAt,
+      }
       setState(versioned)
       sendState(versioned)
     },
-    [sendState]
+    [sendState, pid, joinedAt]
   )
 
   /**
@@ -230,7 +238,12 @@ export function useGame(displayName: string, role: RoomRole) {
   const pendingPlayers = players.filter(
     (player) => !(player.voteKey === voteKey && player.vote)
   )
-  const everyoneVoted = totalCount > 0 && votedCount === totalCount
+  /**
+   * Sólo cuenta como completa si TODOS los presentes están en esta misma
+   * ronda y han votado. Quien aún no ha recibido el cambio de escena figura
+   * como pendiente, así no se cierra con un recuento a medias.
+   */
+  const everyoneVoted = totalCount > 0 && pendingPlayers.length === 0
 
   /**
    * Sala de espera: sólo existe si hay facilitador conectado. Evita que el
