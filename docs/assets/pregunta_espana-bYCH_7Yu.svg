@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" role="img">
+  <defs>
+    <radialGradient id="sheen" cx="42%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.12"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="480" fill="#b9b5ad"/>
+  <rect width="800" height="480" fill="url(#sheen)"/>
+  <g stroke="#a29e96" stroke-width="2" opacity="0.7">
+    <line x1="0" y1="120" x2="800" y2="120"/>
+    <line x1="0" y1="250" x2="800" y2="250"/>
+    <line x1="0" y1="380" x2="800" y2="380"/>
+  </g>
+  <g >
+    <circle cx="284" cy="248" r="104" fill="#00000022"/>
+    <circle cx="280" cy="240" r="104" fill="#26262a"/>
+    <circle cx="280" cy="240" r="96" fill="#f2f0e9"/>
+    <text x="317" y="182" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">1</text><text x="345" y="210" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">2</text><text x="355" y="247" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">3</text><text x="345" y="285" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">4</text><text x="317" y="312" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">5</text><text x="280" y="322" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">6</text><text x="243" y="312" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">7</text><text x="215" y="285" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">8</text><text x="205" y="247" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">9</text><text x="215" y="210" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">10</text><text x="243" y="182" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">11</text><text x="280" y="172" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">12</text><text x="306" y="199" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">13</text><text x="326" y="218" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">14</text><text x="333" y="245" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">15</text><text x="326" y="271" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">16</text><text x="306" y="291" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">17</text><text x="280" y="298" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">18</text><text x="254" y="291" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">19</text><text x="234" y="271" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">20</text><text x="227" y="245" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">21</text><text x="234" y="218" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">22</text><text x="254" y="199" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">23</text><text x="280" y="192" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">00</text>
+    <line x1="280" y1="240" x2="234" y2="234" stroke="#1d1d21" stroke-width="4.800000000000001" stroke-linecap="round"/>
+    <line x1="280" y1="240" x2="347" y2="240" stroke="#1d1d21" stroke-width="3.3600000000000003" stroke-linecap="round"/>
+    
+    <circle cx="280" cy="240" r="4.32" fill="#1d1d21"/>
+    <path d="M208 273.6 l105.60000000000001 -81.6 l17.28 11.52 l-105.60000000000001 81.6z" fill="#ffffff" opacity="0.18"/>
+    <path d="M217.6 299.52 l115.19999999999999 -88.32000000000001 l7.68 5.76 l-115.19999999999999 88.32000000000001z" fill="#ffffff" opacity="0.12"/>
+  </g>
+  <g >
+    <circle cx="564" cy="248" r="104" fill="#00000022"/>
+    <circle cx="560" cy="240" r="104" fill="#26262a"/>
+    <circle cx="560" cy="240" r="96" fill="#f2f0e9"/>
+    <text x="597" y="182" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">1</text><text x="625" y="210" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">2</text><text x="635" y="247" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">3</text><text x="625" y="285" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">4</text><text x="597" y="312" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">5</text><text x="560" y="322" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">6</text><text x="523" y="312" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">7</text><text x="495" y="285" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">8</text><text x="485" y="247" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">9</text><text x="495" y="210" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">10</text><text x="523" y="182" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">11</text><text x="560" y="172" font-size="21" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">12</text><text x="586" y="199" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">13</text><text x="606" y="218" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">14</text><text x="613" y="245" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">15</text><text x="606" y="271" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">16</text><text x="586" y="291" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">17</text><text x="560" y="298" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">18</text><text x="534" y="291" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">19</text><text x="514" y="271" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">20</text><text x="507" y="245" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">21</text><text x="514" y="218" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">22</text><text x="534" y="199" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">23</text><text x="560" y="192" font-size="11" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">00</text>
+    <line x1="560" y1="240" x2="597" y2="268" stroke="#1d1d21" stroke-width="4.800000000000001" stroke-linecap="round"/>
+    <line x1="560" y1="240" x2="627" y2="240" stroke="#1d1d21" stroke-width="3.3600000000000003" stroke-linecap="round"/>
+    
+    <circle cx="560" cy="240" r="4.32" fill="#1d1d21"/>
+    <path d="M488 273.6 l105.60000000000001 -81.6 l17.28 11.52 l-105.60000000000001 81.6z" fill="#ffffff" opacity="0.18"/>
+    <path d="M497.6 299.52 l115.19999999999999 -88.32000000000001 l7.68 5.76 l-115.19999999999999 88.32000000000001z" fill="#ffffff" opacity="0.12"/>
+  </g>
+    <text x="280" y="392" font-size="24" text-anchor="middle" fill="#3c3c40" font-family="Georgia, serif">Ecuador</text>
+    <text x="560" y="392" font-size="24" text-anchor="middle" fill="#3c3c40" font-family="Georgia, serif">España</text>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" role="img">
+  <defs>
+    <radialGradient id="sheen" cx="42%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.12"/>
+    </radialGradient>
+  </defs>
+    <rect width="800" height="480" fill="#232228"/>
+    <path d="M400 0 L250 480 h300 z" fill="#f4efdd" opacity="0.16"/>
+    <ellipse cx="400" cy="440" rx="150" ry="26" fill="#f4efdd" opacity="0.2"/>
+    <text x="400" y="250" font-size="90" text-anchor="middle" fill="#f4efdd" opacity="0.5" font-family="Georgia, serif">?</text>
+</svg>

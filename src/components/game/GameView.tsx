@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Clock3, Crown, Lightbulb, LogOut, Wifi, WifiOff } from 'lucide-react'
+import { Clock3, Crown, LogOut, Wifi, WifiOff } from 'lucide-react'
 
 import { useGame } from '@/game/useGame'
 import type { RoomRole } from '@/realtime/useRoom'
@@ -10,14 +10,16 @@ import { Button } from '@/components/ui/button'
 import { Stage } from './Stage'
 import { OptionsGrid } from './OptionsGrid'
 import { VoteStatusBar } from './VoteStatusBar'
-import { EvidenceDrawer } from './EvidenceDrawer'
+import { MemoryPanel } from './MemoryPanel'
 import { SummaryPanel } from './SummaryPanel'
 import { AdminDock } from './AdminDock'
 
 /**
- * La vista de la partida, idéntica para jugadores y anfitrión: el admin la
+ * La vista de la partida, idéntica para jugadores y facilitador: el admin la
  * proyecta tal cual y sus controles viven en un dock flotante aparte.
- * Prioridad visual: la imagen y las acciones; todo lo demás es secundario.
+ *
+ * Cuatro zonas: escena (imagen protagonista), opciones de votación, memoria
+ * de lo descubierto y tiempo real informativo (dentro del panel de memoria).
  */
 export function GameView({
   role,
@@ -29,8 +31,7 @@ export function GameView({
   onExit: () => void
 }) {
   const game = useGame(name, role)
-  const { story, scene, status, admin, elapsedSeconds, pastDeadline, lastCard, phase } =
-    game
+  const { story, scene, status, admin, elapsedSeconds, pastDeadline } = game
 
   // No recargar por actualización mientras se está jugando.
   useEffect(() => {
@@ -53,6 +54,17 @@ export function GameView({
     previousScene.current = sceneId
   }, [sceneId])
 
+  // Las 12:00 llegan y no pasa nada: se cuenta una sola vez, sin bloquear.
+  const [noonNotice, setNoonNotice] = useState(false)
+  const noonShownRef = useRef(false)
+  useEffect(() => {
+    if (!pastDeadline || noonShownRef.current) return
+    noonShownRef.current = true
+    setNoonNotice(true)
+    const timer = setTimeout(() => setNoonNotice(false), 9000)
+    return () => clearTimeout(timer)
+  }, [pastDeadline])
+
   if (!scene) {
     return (
       <div className="fixed inset-0 grid place-items-center bg-background">
@@ -72,7 +84,20 @@ export function GameView({
           className="pointer-events-none fixed inset-0 z-50 grid animate-curtain place-items-center bg-background"
         >
           <p className="animate-pulse-soft text-sm uppercase tracking-[0.3em] text-muted-foreground">
-            {scene.detour ? 'Consecuencia' : isEnding ? 'Desenlace' : 'Siguiente paso'}
+            {scene.type === 'detour'
+              ? 'Consecuencia'
+              : isEnding
+                ? 'Desenlace'
+                : 'Siguiente paso'}
+          </p>
+        </div>
+      )}
+
+      {/* LAS 12:00, sin drama */}
+      {noonNotice && (
+        <div className="pointer-events-none fixed inset-x-0 top-16 z-40 flex justify-center px-4">
+          <p className="max-w-md animate-fade-up whitespace-pre-line rounded-lg border bg-card/95 px-5 py-3 text-center text-sm shadow-xl">
+            {story.noon}
           </p>
         </div>
       )}
@@ -82,14 +107,12 @@ export function GameView({
         <Badge
           variant="secondary"
           className="font-mono"
-          title="La hora de la historia. No hay penalización por pasar de las 12:00."
+          title="La hora de la historia. Pasar de las 12:00 no penaliza nada."
         >
           <Clock3 /> {storyClock(story, elapsedSeconds)}
         </Badge>
         <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-          {pastDeadline
-            ? 'Son más de las 12:00 y no ha entrado nadie'
-            : story.premise}
+          {pastDeadline ? 'Son más de las 12:00 y el jefe no aparece' : story.premise}
         </span>
 
         <div className="ml-auto flex items-center gap-2">
@@ -117,7 +140,7 @@ export function GameView({
           </span>
           <Badge
             variant={admin ? 'secondary' : 'outline'}
-            title={admin ? 'Hay anfitrión dirigiendo' : 'Sin anfitrión conectado'}
+            title={admin ? 'Hay facilitador conectado' : 'Sin facilitador conectado'}
           >
             <Crown />
           </Badge>
@@ -133,39 +156,26 @@ export function GameView({
         </div>
       )}
 
-      {/* IMAGEN + ACCIONES: el centro de la pantalla */}
+      {/* ESCENA + OPCIONES, con la memoria siempre visible al lado */}
       <main className="relative min-h-0 flex-1 overflow-y-auto">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--muted))_0%,hsl(var(--background))_65%)]"
         />
-        <div className="relative mx-auto flex min-h-full w-full max-w-4xl flex-col items-center gap-5 px-4 py-6">
-          <Stage scene={scene} />
+        <div className="relative mx-auto grid min-h-full w-full max-w-6xl gap-5 px-4 py-6 lg:grid-cols-[1fr_17rem]">
+          <div className="flex min-w-0 flex-col items-center gap-5">
+            <Stage scene={scene} />
+            {isEnding ? <SummaryPanel game={game} /> : <OptionsGrid game={game} />}
+            {!isEnding && (
+              <div className="mt-auto w-full pt-2">
+                <VoteStatusBar game={game} />
+              </div>
+            )}
+          </div>
 
-          {/* Nueva pista: alimenta la discusión antes de la siguiente votación */}
-          {lastCard && !isEnding && phase === 'voting' && (
-            <div className="w-full max-w-2xl animate-fade-up rounded-lg border border-primary/30 bg-primary/5 p-3">
-              <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <Lightbulb className="size-3.5" /> Nueva pista · {lastCard.slot}
-              </p>
-              <p className="mt-1 text-sm">{lastCard.text}</p>
-              {lastCard.noise && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Es lo que alguien recuerda, no una prueba.
-                </p>
-              )}
-            </div>
-          )}
-
-          {isEnding ? <SummaryPanel game={game} /> : <OptionsGrid game={game} />}
-
-          {/* Lo secundario, al fondo y compacto */}
-          {!isEnding && (
-            <div className="mt-auto flex w-full flex-col gap-3 pt-2">
-              <VoteStatusBar game={game} />
-              <EvidenceDrawer game={game} />
-            </div>
-          )}
+          <div className="flex flex-col">
+            <MemoryPanel game={game} />
+          </div>
         </div>
       </main>
 

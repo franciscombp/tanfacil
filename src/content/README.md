@@ -1,6 +1,6 @@
 # Contenido del juego
 
-Todo lo editable (diálogos, cartas, checkpoints, finales, tiempos e
+Todo lo editable (escenas, opciones, memoria, finales, tiempos e
 ilustraciones) vive aquí. El código no conoce la historia: sólo la carga.
 
 ## Estructura
@@ -10,24 +10,33 @@ content/
   index.ts               ← registro de historias (cambiar ACTIVE_STORY_ID)
   stories/
     reloj/
-      story.json         ← escenas, mazo, checkpoints, tiempos, textos finales
+      story.json         ← escenas, memoria, cierre, tiempos
       scenes/
         <sceneId>.svg    ← una ilustración por escena (opcional)
 ```
 
 ## Añadir o cambiar una historia
 
-1. Duplica `stories/reloj/` con otro id, por ejemplo `stories/impresora/`.
-2. Edita su `story.json`. La validación avisa por consola de enlaces rotos.
+1. Duplica `stories/reloj/` con otro id.
+2. Edita su `story.json`. Los tests (`npx vitest run`) validan el grafo:
+   enlaces rotos, escenas inalcanzables, más de cuatro opciones…
 3. Regístrala en `index.ts` y apunta `ACTIVE_STORY_ID` a su id.
 
 ## Reglas del formato
 
-- Una escena sin `options` o con `"type": "ending"` es un final.
-- `next` debe apuntar al id de otra escena.
-- `draw` saca una carta de ese apartado del tablero (`board`).
-- `detour: true` marca una consecuencia: vuelve al último checkpoint con
-  `returnToCheckpoint: true` y explica el aprendizaje en `feedback`.
+- Tipos de escena: `scene`, `detour` (consecuencia que devuelve a la
+  conversación), `convergence` y `ending` (sin opciones).
+- Cada opción: `id`, `label`, `next` (id de otra escena) y `actionType`
+  (`actuar | preguntar | observar | broma | decidir`), usado para las
+  métricas de primera acción impulsiva y primera pregunta.
+- `memoryAdd`: hechos que se descubren al llegar a la escena. Son
+  acumulativos, nunca se borran y se muestran en el panel «Lo que sabemos».
+  Máximo cuatro opciones por escena.
+- La opción que llevó a un desvío queda marcada «Ya intentamos esto» al
+  volver. Si todas las opciones de una escena quedaran bloqueadas, ninguna
+  se bloquea.
+- `closing`: pantalla de cierre tras cualquier final (descubrimientos,
+  frase final y etiqueta del tiempo total).
+- `noon`: texto que aparece una vez cuando el reloj narrativo pasa de las
+  12:00. Nada termina ni se bloquea por tiempo.
 - Si falta `scenes/<sceneId>.svg`, la escena usa su emoji `art`.
-- `timers` controla la espera: segundos de votación, de revelado del resultado
-  y el margen para rectificar cuando ya votaron todos.

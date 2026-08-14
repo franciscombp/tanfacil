@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" role="img">
+  <defs>
+    <radialGradient id="sheen" cx="42%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.12"/>
+    </radialGradient>
+  </defs>
+    <rect width="800" height="480" fill="#131217"/>
+    <rect x="320" y="0" width="56" height="480" fill="#0c0b0f"/>
+    <circle cx="460" cy="240" r="138" fill="#1d1c22"/>
+    <circle cx="460" cy="240" r="130" fill="#242329"/>
+    <g stroke="#3a3944" stroke-width="4" stroke-linecap="round">
+      <line x1="460" y1="240" x2="398" y2="248"/>
+      <line x1="460" y1="240" x2="504" y2="164"/>
+    </g>
+    <text x="120" y="120" font-size="40" fill="#3f3e48">zzz</text>
+</svg>

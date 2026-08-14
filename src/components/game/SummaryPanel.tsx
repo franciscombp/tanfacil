@@ -2,52 +2,45 @@ import type { Game } from '@/game/useGame'
 import { formatDuration } from '@/engine/story'
 
 /**
- * Pantalla final: los tiempos del equipo frente al grupo, sin juzgarlos.
- * Todos los textos salen del bloque `summary` de la historia.
+ * Cierre de la experiencia, según la especificación: lo que el equipo tuvo
+ * que descubrir, la frase final y el tiempo total. Sin puntuación y sin
+ * declarar una única respuesta correcta. El detalle fino queda en el modo
+ * diagnóstico del facilitador.
  */
 export function SummaryPanel({ game }: { game: Game }) {
   const { story, metrics, role } = game
-  const summary = story.summary
-  const lead = metrics.timeToConclusion ?? metrics.elapsedSeconds
-
-  const rows: Array<[string, string]> = [
-    ['timeToFirstAction', formatDuration(metrics.timeToFirstAction)],
-    ['timeToFirstInvestigation', formatDuration(metrics.timeToFirstInvestigation)],
-    ['detours', String(metrics.detours)],
-    ['cardsDrawn', String(metrics.cardsDrawn)],
-    ['keyCards', String(metrics.keyCards)],
-    ['noiseCards', String(metrics.noiseCards)],
-  ]
+  const closing = story.closing
+  const total = metrics.timeToConclusion ?? metrics.elapsedSeconds
 
   return (
-    <div className="w-full max-w-3xl space-y-4">
-      <div className="text-center">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {summary.leadLabel}
+    <div className="w-full max-w-2xl animate-fade-up space-y-5 rounded-xl border bg-card/60 p-6 text-center">
+      <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+        {closing.intro}
+      </p>
+
+      <ul className="mx-auto max-w-md space-y-1 text-left text-sm">
+        {closing.discoveries.map((line) => (
+          <li key={line}>
+            <span className="mr-1.5 text-muted-foreground">—</span>
+            {line}
+          </li>
+        ))}
+      </ul>
+
+      <p className="text-balance font-medium leading-relaxed">{closing.phrase}</p>
+
+      <div className="border-t pt-4">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          {closing.timeLabel}
         </p>
         <p className="font-mono text-4xl font-semibold tabular-nums">
-          {formatDuration(lead)}
-        </p>
-        <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-          {summary.reading.replace('{elapsed}', formatDuration(lead))}
+          {formatDuration(total)}
         </p>
       </div>
 
-      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {rows.map(([key, value]) => (
-          <div key={key} className="rounded-md border p-2 text-center">
-            <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              {summary.labels[key] ?? key}
-            </dt>
-            <dd className="font-mono text-lg tabular-nums">{value}</dd>
-          </div>
-        ))}
-      </dl>
-
-      <p className="text-balance text-center text-sm font-medium">{summary.closing}</p>
       {role === 'player' && (
-        <p className="text-center text-xs text-muted-foreground">
-          El anfitrión puede volver a empezar la partida.
+        <p className="text-xs text-muted-foreground">
+          El facilitador puede volver a empezar la partida.
         </p>
       )}
     </div>

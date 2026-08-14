@@ -1,38 +1,34 @@
 import {
-  BoardSlot,
-  Card,
-  CheckpointDef,
+  ActionType,
+  Fact,
   Scene,
   SceneOption,
+  SceneType,
   Story,
-  StorySummary,
+  StoryClosing,
   StoryTimers,
 } from './types'
 
 /**
  * Carga y validación del contenido. El motor recibe un JSON crudo (de
- * `content/`) y devuelve una `Story` tipada; si el guion tiene enlaces rotos,
- * `validateStory` los enumera para avisar al editar.
+ * `content/`) y devuelve una `Story` tipada; `validateStory` enumera los
+ * enlaces rotos para avisar al editar.
  */
 
 interface RawOption {
   id: string
   label: string
   next?: string
-  draw?: string
-  returnToCheckpoint?: boolean
+  actionType?: string
 }
 
 interface RawScene {
   id: string
   type?: string
-  mode?: string
-  detour?: boolean
-  checkpoint?: string
-  art: string
   title: string
+  art: string
   text: string
-  feedback?: string
+  memoryAdd?: Fact[]
   options?: RawOption[]
 }
 
@@ -41,12 +37,9 @@ interface RawStory {
   premise: string
   clock: { startsAt: string; deadline: string }
   timers?: Partial<StoryTimers>
-  board: BoardSlot[]
+  noon?: string
+  closing: StoryClosing
   scenes: RawScene[]
-  deck: Card[]
-  checkpoints: CheckpointDef[]
-  conclusion: { sceneId: string; requiredSlots: string[]; hint: string }
-  summary: StorySummary
 }
 
 const DEFAULT_TIMERS: StoryTimers = {
@@ -54,6 +47,9 @@ const DEFAULT_TIMERS: StoryTimers = {
   revealSeconds: 6,
   allVotedGraceSeconds: 5,
 }
+
+const SCENE_TYPES: SceneType[] = ['scene', 'detour', 'convergence', 'ending']
+const ACTION_TYPES: ActionType[] = ['actuar', 'preguntar', 'observar', 'broma', 'decidir']
 
 function parseClock(value: string): number {
   const [hours, minutes] = value.split(':').map(Number)
@@ -65,20 +61,24 @@ function toScene(raw: RawScene, illustration: string | null): Scene {
     id: option.id,
     label: option.label,
     next: option.next,
-    draw: option.draw,
-    returnToCheckpoint: option.returnToCheckpoint,
+    actionType: ACTION_TYPES.includes(option.actionType as ActionType)
+      ? (option.actionType as ActionType)
+      : undefined,
   }))
+
+  const type = SCENE_TYPES.includes(raw.type as SceneType)
+    ? (raw.type as SceneType)
+    : options.length === 0
+      ? 'ending'
+      : 'scene'
 
   return {
     id: raw.id,
-    type: raw.type === 'ending' || options.length === 0 ? 'ending' : 'vote',
-    mode: raw.mode === 'investigate' ? 'investigate' : 'scene',
-    detour: Boolean(raw.detour),
-    checkpoint: raw.checkpoint,
-    art: raw.art,
+    type,
     title: raw.title,
+    art: raw.art,
     text: raw.text,
-    feedback: raw.feedback,
+    memoryAdd: raw.memoryAdd,
     illustration,
     options,
   }
@@ -92,73 +92,59 @@ export function buildStory(
   const raw = rawInput as RawStory
   const clockStartSeconds = parseClock(raw.clock.startsAt)
 
+  const scenes = Object.fromEntries(
+    raw.scenes.map((scene) => [scene.id, toScene(scene, illustrations[scene.id] ?? null)])
+  )
+
+  const factsById: Record<string, Fact> = {}
+  for (const scene of Object.values(scenes)) {
+    for (const fact of scene.memoryAdd ?? []) {
+      factsById[fact.id] = fact
+    }
+  }
+
   return {
     id,
     title: raw.title,
     premise: raw.premise,
     timers: { ...DEFAULT_TIMERS, ...raw.timers },
-    board: raw.board,
+    noon: raw.noon ?? '',
+    closing: raw.closing,
     startScene: raw.scenes[0]?.id ?? '',
-    scenes: Object.fromEntries(
-      raw.scenes.map((scene) => [
-        scene.id,
-        toScene(scene, illustrations[scene.id] ?? null),
-      ])
-    ),
-    deck: raw.deck,
-    cardsById: Object.fromEntries(raw.deck.map((card) => [card.id, card])),
-    checkpoints: raw.checkpoints,
-    conclusion: raw.conclusion,
-    summary: raw.summary,
+    scenes,
+    factsById,
     clockStartSeconds,
     secondsToDeadline: parseClock(raw.clock.deadline) - clockStartSeconds,
   }
 }
 
-/** Errores del guion: enlaces rotos o referencias inexistentes. */
+/** Errores del guion: enlaces rotos, opciones de más o finales con salida. */
 export function validateStory(story: Story): string[] {
   const problems: string[] = []
 
   if (!story.scenes[story.startScene]) {
     problems.push(`no hay escena inicial ("${story.startScene}")`)
   }
-  if (!story.scenes[story.conclusion.sceneId]) {
-    problems.push(`conclusion.sceneId "${story.conclusion.sceneId}" no existe`)
-  }
 
   for (const scene of Object.values(story.scenes)) {
-    if (scene.type === 'ending') continue
+    if (scene.type === 'ending') {
+      if (scene.options.length > 0) {
+        problems.push(`el final "${scene.id}" no debería tener opciones`)
+      }
+      continue
+    }
+    if (scene.options.length === 0) {
+      problems.push(`"${scene.id}" no es final y no tiene opciones`)
+    }
+    if (scene.options.length > 4) {
+      problems.push(`"${scene.id}" tiene ${scene.options.length} opciones (máximo 4)`)
+    }
     for (const option of scene.options) {
-      if (option.next && !story.scenes[option.next]) {
+      if (!option.next) {
+        problems.push(`"${scene.id}" → "${option.id}" no tiene destino`)
+      } else if (!story.scenes[option.next]) {
         problems.push(
           `"${scene.id}" → "${option.id}" apunta a "${option.next}", que no existe`
-        )
-      }
-      if (option.draw && !story.deck.some((card) => card.slot === option.draw)) {
-        problems.push(
-          `"${scene.id}" → "${option.id}" saca cartas de "${option.draw}", que no está en el mazo`
-        )
-      }
-    }
-    if (
-      scene.checkpoint &&
-      !story.checkpoints.some((checkpoint) => checkpoint.id === scene.checkpoint)
-    ) {
-      problems.push(
-        `"${scene.id}" activa el checkpoint "${scene.checkpoint}", que no existe`
-      )
-    }
-  }
-
-  for (const checkpoint of story.checkpoints) {
-    const ids = [
-      ...(checkpoint.whenCard ? [checkpoint.whenCard] : []),
-      ...(checkpoint.whenCards ?? []),
-    ]
-    for (const cardId of ids) {
-      if (!story.cardsById[cardId]) {
-        problems.push(
-          `checkpoint "${checkpoint.id}" espera la carta "${cardId}", que no existe`
         )
       }
     }

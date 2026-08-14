@@ -12,67 +12,42 @@ export interface StoryTimers {
   allVotedGraceSeconds: number
 }
 
+export type SceneType = 'scene' | 'detour' | 'convergence' | 'ending'
+export type ActionType = 'actuar' | 'preguntar' | 'observar' | 'broma' | 'decidir'
+
+/** Un hecho descubierto. Una vez en la memoria, no se borra. */
+export interface Fact {
+  id: string
+  text: string
+}
+
 export interface SceneOption {
   id: string
   label: string
-  /** Escena a la que lleva. */
   next?: string
-  /** Saca una carta de este apartado del tablero. */
-  draw?: string
-  /** Devuelve al último checkpoint. */
-  returnToCheckpoint?: boolean
+  /** Clasifica la opción para las métricas (impulso vs. investigación). */
+  actionType?: ActionType
 }
 
 export interface Scene {
   id: string
-  type: 'vote' | 'ending'
-  /** `investigate` muestra el tablero de evidencias. */
-  mode: 'scene' | 'investigate'
-  /** Una consecuencia que devuelve a un checkpoint. No es un final. */
-  detour: boolean
-  /** Checkpoint que se activa al llegar aquí. */
-  checkpoint?: string
+  type: SceneType
+  title: string
   /** Emoji de reserva si no hay ilustración. */
   art: string
-  title: string
   text: string
-  /** Qué aprendió el equipo en un desvío. */
-  feedback?: string
+  /** Hechos que se descubren al llegar a esta escena. */
+  memoryAdd?: Fact[]
   /** URL del SVG de la escena, si existe. */
   illustration: string | null
   options: SceneOption[]
 }
 
-export interface Card {
-  id: string
-  slot: string
-  round: number
-  text: string
-  key?: boolean
-  noise?: boolean
-}
-
-export interface BoardSlot {
-  slot: string
-  question: string
-}
-
-export interface CheckpointDef {
-  id: string
-  label: string
-  note: string
-  /** Se activa al sacar esta carta. */
-  whenCard?: string
-  /** Se activa al reunir todas estas cartas. */
-  whenCards?: string[]
-}
-
-export interface StorySummary {
-  title: string
-  leadLabel: string
-  reading: string
-  closing: string
-  labels: Record<string, string>
+export interface StoryClosing {
+  intro: string
+  discoveries: string[]
+  phrase: string
+  timeLabel: string
 }
 
 export interface Story {
@@ -80,51 +55,63 @@ export interface Story {
   title: string
   premise: string
   timers: StoryTimers
-  board: BoardSlot[]
+  /** Texto que aparece cuando el reloj narrativo pasa de las 12:00. */
+  noon: string
+  closing: StoryClosing
   startScene: string
   scenes: Record<string, Scene>
-  deck: Card[]
-  cardsById: Record<string, Card>
-  checkpoints: CheckpointDef[]
-  conclusion: { sceneId: string; requiredSlots: string[]; hint: string }
-  summary: StorySummary
-  /** Hora de inicio de la ficción, en segundos desde medianoche. */
+  /** Todos los hechos de la historia, por id. */
+  factsById: Record<string, Fact>
   clockStartSeconds: number
-  /** Segundos de partida hasta que el reloj de la ficción marque el límite. */
   secondsToDeadline: number
 }
 
-/** Punto seguro al que vuelven los desvíos. */
-export interface Snapshot {
+export type GamePhase = 'voting' | 'reveal'
+
+/** Paso del recorrido, para el diagnóstico del facilitador. */
+export interface RouteStep {
   sceneId: string
-  drawn: string[]
-  checkpoints: string[]
+  at: number
 }
 
-export type GamePhase = 'voting' | 'reveal' | 'tie'
+/** Registro de cada decisión tomada, para el diagnóstico. */
+export interface DecisionLog {
+  sceneId: string
+  optionId: string
+  counts: Record<string, number>
+  tie: boolean
+  forced: boolean
+  at: number
+}
 
 /** Estado de la partida: lo publica el anfitrión y el resto lo replica. */
 export interface GameState {
   sceneId: string
-  /** Ronda de votación dentro de la escena; sube al repetirse por empate. */
+  /** Ronda de votación dentro de la escena; sube al repetirse. */
   round: number
   phase: GamePhase
   /** Fin de la fase actual (epoch ms). 0 = sin límite. */
   deadline: number
   winner: string | null
-  /** Momento en que empezó la partida (epoch ms). El reloj sólo mide. */
+  /** Votación en pausa: el facilitador congela el cierre, los votos siguen. */
+  paused: boolean
+  /** Segunda votación tras empate: sólo estas opciones son elegibles. */
+  tiedOptions: string[] | null
+  repeatReason: 'tie' | 'no_votes' | null
+  /** La decisión en curso fue forzada por el facilitador. */
+  forced: boolean
   startedAt: number
   solvedAt: number | null
   firstActionAt: number | null
   firstInvestigationAt: number | null
   detours: number
-  /** Por qué se repite la ronda actual, para explicarlo en pantalla. */
-  repeatReason: 'tie' | 'no_votes' | null
-  /** Cartas reveladas, en orden. */
-  drawn: string[]
-  lastCard: string | null
-  checkpoints: string[]
-  saved: Snapshot | null
+  ties: number
+  /** Ids de hechos descubiertos, en orden. Nunca se borra. */
+  memory: string[]
+  /** Desvíos ya visitados: las opciones que llevan a ellos se marcan. */
+  tried: string[]
+  route: RouteStep[]
+  log: DecisionLog[]
   /** Sube con cada cambio; el estado con versión más alta manda. */
   version: number
 }
@@ -135,7 +122,6 @@ export interface GameMetrics {
   timeToFirstInvestigation: number | null
   timeToConclusion: number | null
   detours: number
-  cardsDrawn: number
-  keyCards: number
-  noiseCards: number
+  ties: number
+  factsDiscovered: number
 }

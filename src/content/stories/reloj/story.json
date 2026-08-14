@@ -1,505 +1,504 @@
 {
   "title": "No es tan fácil",
   "premise": "El jefe pidió arreglar el reloj antes de las 12:00.",
-  "clock": {
-    "startsAt": "11:42",
-    "deadline": "12:00",
-    "purpose": "distractor",
-    "measure": "realElapsedTime"
+  "clock": { "startsAt": "11:42", "deadline": "12:00" },
+  "timers": { "voteSeconds": 60, "revealSeconds": 6, "allVotedGraceSeconds": 5 },
+  "noon": "Son las 12:00.\nEl jefe todavía no aparece.\nEl reloj sigue sin explicar qué problema estamos resolviendo.",
+  "rules": "Sin mazo, sin cartas, sin puntos, sin derrota. La memoria acumula hechos descubiertos (memoryAdd) y nunca se borra. Los desvíos (type detour) muestran la consecuencia y sus opciones vuelven a la conversación; la opción que llevó a un desvío queda marcada como ya intentada. Las 12:00 son un distractor: nada termina ni se bloquea por tiempo. Máximo cuatro opciones por escena. Las escenas pregunta_funcion y pregunta_agujero no estaban en la especificación y fueron añadidas porque varias rutas las referencian.",
+  "closing": {
+    "intro": "El jefe pidió arreglar un reloj.\n\nEl equipo tuvo que descubrir:",
+    "discoveries": [
+      "Qué función cumplía.",
+      "Qué estaba ocultando.",
+      "Qué restricciones no podía tocar.",
+      "Qué necesidad ya había desaparecido.",
+      "Qué parte era solución y qué parte era memoria."
+    ],
+    "phrase": "No es tan fácil retirar una solución cuando todavía confundimos su historia con su función.",
+    "timeLabel": "Tiempo total hasta llegar a una solución"
   },
-  "timers": {
-    "voteSeconds": 60,
-    "revealSeconds": 6,
-    "allVotedGraceSeconds": 5
-  },
-  "rules": "La hora límite es un distractor narrativo: no hay tiempo límite ni penalizaciones por llegar a las 12:00, y el jefe nunca llega a entrar. El sistema sólo registra cuánto tarda el equipo en pasar de la intervención inmediata a una solución informada. Ningún dato resuelve el problema por sí solo: la solución aparece cuando varias evidencias tienen sentido juntas. No hay finales malos, hay desvíos: el juego muestra la consecuencia y devuelve al equipo a un checkpoint con lo aprendido. Para editar: 'next' apunta al id de otra escena, 'draw' saca una carta del tablero y 'detour' marca una escena como consecuencia.",
-  "board": [
-    {
-      "slot": "objeto",
-      "question": "¿Qué es realmente este reloj?"
-    },
-    {
-      "slot": "pared",
-      "question": "¿Qué está ocultando?"
-    },
-    {
-      "slot": "viga",
-      "question": "¿Qué función cumple la viga?"
-    },
-    {
-      "slot": "pasado",
-      "question": "¿Por qué se colocó ahí?"
-    },
-    {
-      "slot": "presente",
-      "question": "¿Todavía hace falta?"
-    }
-  ],
   "scenes": [
     {
       "id": "inicio",
-      "art": "🕛",
-      "title": "11:42",
-      "text": "El jefe pidió arreglar el reloj antes de las 12:00. Está en la pared del fondo, medio tapado por una viga. Las manecillas no se mueven.",
+      "type": "scene",
+      "title": "El problema es el reloj",
+      "art": "🕐",
+      "text": "El jefe mira el reloj de la pared. Está medio tapado por una viga y se ve horrible.\n\n«Arréglenlo. No puede seguir así.»\n\nSon las 11:42.",
       "options": [
-        {
-          "id": "solucionar",
-          "label": "Solucionarlo",
-          "next": "pintado"
-        },
-        {
-          "id": "pensar",
-          "label": "Déjame pensarlo",
-          "next": "investigacion"
-        }
+        { "id": "solucionar", "label": "Solucionarlo", "next": "pintar_viga", "actionType": "actuar" },
+        { "id": "preguntar_mal", "label": "Preguntar qué está mal exactamente", "next": "pregunta_problema", "actionType": "preguntar" },
+        { "id": "preguntar_funcion", "label": "Preguntar para qué sirve el reloj", "next": "pregunta_funcion", "actionType": "preguntar" },
+        { "id": "contestar", "label": "Decirle al jefe que lo solucione él", "next": "jefe_responsabilidad", "actionType": "broma" }
       ]
     },
     {
-      "id": "pintado",
-      "art": "🎨",
+      "id": "jefe_responsabilidad",
+      "type": "detour",
+      "title": "Perfecto, entonces es de ustedes",
+      "art": "🚪",
+      "text": "El jefe los mira en silencio.\n\n«Perfecto. Entonces ustedes son los responsables de que siga así.»",
+      "options": [
+        { "id": "volver", "label": "Volver al problema", "next": "inicio", "actionType": "decidir" },
+        { "id": "solucionar", "label": "Solucionarlo", "next": "pintar_viga", "actionType": "actuar" }
+      ]
+    },
+    {
+      "id": "pregunta_problema",
+      "type": "scene",
+      "title": "¿Qué significa arreglarlo?",
+      "art": "❓",
+      "text": "El jefe responde:\n\n«Que se vea bien.»\n\nNo queda claro si el problema es que no se ve la hora, que el reloj está detenido, que la pared se ve mal o que alguien se acaba de fijar en él.",
+      "options": [
+        { "id": "hacer_visible", "label": "Hacer visible el reloj", "next": "pintar_viga", "actionType": "actuar" },
+        { "id": "preguntar_funcion", "label": "Preguntar para qué sirve", "next": "pregunta_funcion", "actionType": "preguntar" },
+        { "id": "observar_pared", "label": "Mirar qué hay detrás", "next": "mover_reloj", "actionType": "observar" },
+        { "id": "aceptar_encargo", "label": "Aceptar la definición del jefe", "next": "pintar_viga", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "pregunta_funcion",
+      "type": "scene",
+      "title": "¿Para qué sirve?",
+      "art": "🤔",
+      "text": "Nadie lo tiene claro.\n\nEl reloj está detenido desde hace años y nadie recuerda la última vez que alguien lo miró para saber la hora.\n\nAlguien comenta que antes «marcaba otras horas».",
+      "memoryAdd": [
+        { "id": "reloj-detenido", "text": "El reloj está detenido desde hace años" }
+      ],
+      "options": [
+        { "id": "horas", "label": "Preguntar qué horas marcaba antes", "next": "pregunta_espana", "actionType": "preguntar" },
+        { "id": "cerca", "label": "Mirarlo de cerca", "next": "mover_reloj", "actionType": "observar" },
+        { "id": "consulta", "label": "Preguntar quién lo consulta hoy", "next": "pregunta_consulta", "actionType": "preguntar" }
+      ]
+    },
+    {
+      "id": "pintar_viga",
+      "type": "scene",
       "title": "La forma está completa",
-      "text": "Alguien pinta sobre la viga la mitad del reloj que no se ve. Los números no coinciden con los de verdad y las manecillas siguen detenidas. La forma del reloj, eso sí, ahora está completa.",
+      "art": "🎨",
+      "text": "Alguien pinta sobre la viga los números que faltan.\n\nAhora se puede interpretar la hora completa, pero el reloj parece una instalación artística hecha con prisa.\n\nEl jefe vuelve a mirar la pared.\n\n«Ahora se entiende. Pero estéticamente está horrible.»",
       "options": [
-        {
-          "id": "quitar_viga",
-          "label": "Quitar la viga",
-          "next": "desvio_techo"
-        },
-        {
-          "id": "mover_reloj",
-          "label": "Mover el reloj",
-          "next": "pared_marca"
-        },
-        {
-          "id": "borrar",
-          "label": "Borrar la pintura",
-          "next": "investigacion"
-        },
-        {
-          "id": "pensar",
-          "label": "Déjame pensarlo",
-          "next": "investigacion"
-        }
+        { "id": "decorar", "label": "Decorarlo mejor", "next": "decorar_viga", "actionType": "actuar" },
+        { "id": "quitar_viga", "label": "Quitar la viga", "next": "quitar_viga", "actionType": "actuar" },
+        { "id": "mover_reloj", "label": "Mover el reloj", "next": "mover_reloj", "actionType": "actuar" },
+        { "id": "preguntar_viga", "label": "Preguntar qué función cumple la viga", "next": "pregunta_viga", "actionType": "preguntar" }
       ]
     },
     {
-      "id": "pared_marca",
-      "art": "⭕",
-      "title": "Algo detrás",
-      "text": "Al despegar el reloj de la pared aparece una marca circular más oscura y, en el centro, un agujero con restos de cable.",
-      "checkpoint": "cp_agujero",
+      "id": "decorar_viga",
+      "type": "detour",
+      "title": "Una decisión intencional",
+      "art": "🖼️",
+      "text": "La viga ahora tiene números, textura de mármol y una placa que dice:\n\n«Intervención artística.»\n\nEl reloj sigue sin funcionar y continúa parcialmente oculto.",
       "options": [
-        {
-          "id": "seguir",
-          "label": "Mirar qué hay en el agujero",
-          "next": "investigacion",
-          "draw": "pared"
-        },
-        {
-          "id": "tapar",
-          "label": "Volver a colgarlo y no decir nada",
-          "next": "desvio_tapar"
-        },
-        {
-          "id": "pensar",
-          "label": "Déjame pensarlo",
-          "next": "investigacion"
-        }
+        { "id": "presentar", "label": "Presentarlo así al jefe", "next": "jefe_instalacion", "actionType": "broma" },
+        { "id": "volver", "label": "Volver y probar otra cosa", "next": "pintar_viga", "actionType": "decidir" },
+        { "id": "preguntar_problema", "label": "Preguntar qué estamos intentando arreglar", "next": "pregunta_problema", "actionType": "preguntar" }
       ]
     },
     {
-      "id": "investigacion",
-      "mode": "investigate",
-      "art": "🔍",
-      "title": "El tablero",
-      "text": "Nadie tiene la historia completa. Hay que juntar piezas: qué es el reloj, qué tapa, qué sostiene la viga, por qué se puso ahí y si todavía hace falta.",
+      "id": "jefe_instalacion",
+      "type": "detour",
+      "title": "Yo solo dije que se viera mejor",
+      "art": "🫥",
+      "text": "El jefe escucha la explicación completa sobre la intención artística.\n\nMira la placa. Mira la viga. Mira el reloj.\n\n«Yo solo dije que se viera mejor.»",
       "options": [
-        {
-          "id": "mirar_reloj",
-          "label": "Mirar el reloj",
-          "draw": "objeto"
-        },
-        {
-          "id": "revisar_pared",
-          "label": "Revisar la pared",
-          "draw": "pared"
-        },
-        {
-          "id": "investigar_viga",
-          "label": "Investigar la viga",
-          "draw": "viga"
-        },
-        {
-          "id": "preguntar",
-          "label": "Preguntar en la oficina",
-          "draw": "oficina"
-        },
-        {
-          "id": "buscar_antiguo",
-          "label": "Buscar información antigua",
-          "draw": "pasado"
-        },
-        {
-          "id": "consultar_teams",
-          "label": "Consultar la herramienta actual",
-          "draw": "presente"
-        },
-        {
-          "id": "cambiar_pila",
-          "label": "Cambiar la pila",
-          "next": "desvio_pila"
-        },
-        {
-          "id": "quitar_viga",
-          "label": "Quitar la viga",
-          "next": "desvio_techo"
-        },
-        {
-          "id": "comprar",
-          "label": "Comprar un reloj nuevo",
-          "next": "desvio_comprar"
-        }
+        { "id": "volver", "label": "Volver a la decisión", "next": "pintar_viga", "actionType": "decidir" },
+        { "id": "preguntar_problema", "label": "Preguntar qué estamos intentando arreglar", "next": "pregunta_problema", "actionType": "preguntar" }
       ]
     },
     {
-      "id": "desvio_pila",
-      "detour": true,
-      "art": "🔋",
-      "title": "El reloj funciona. La solución no.",
-      "text": "Una mano coloca la pila. Las manecillas arrancan, giran deprisa y se detienen exactamente en las 12:00. Todos miran la puerta. No entra nadie. El reloj ya da una hora, pero nadie sabe todavía qué problema resuelve.",
-      "options": [
-        {
-          "id": "checkpoint",
-          "label": "Volver al último checkpoint",
-          "returnToCheckpoint": true
-        },
-        {
-          "id": "seguir",
-          "label": "Seguir con esta solución",
-          "next": "desvio_pila_final"
-        }
-      ],
-      "feedback": "Corregiste el síntoma visible, pero todavía no sabías qué función cumplía el reloj."
-    },
-    {
-      "id": "desvio_pila_final",
-      "detour": true,
-      "art": "🕛",
-      "title": "12:00",
-      "text": "El reloj funciona. La viga sigue tapándolo, la hora pintada no coincide con la real y el agujero sigue ahí debajo. El reloj funciona. La solución no.",
-      "options": [
-        {
-          "id": "checkpoint",
-          "label": "Volver al checkpoint",
-          "returnToCheckpoint": true
-        }
-      ],
-      "feedback": "Un reloj en hora sobre un agujero tapado sigue sin resolver el problema."
-    },
-    {
-      "id": "desvio_techo",
-      "detour": true,
+      "id": "quitar_viga",
+      "type": "detour",
+      "title": "El reloj se ve perfecto",
       "art": "🏗️",
-      "title": "La viga no se toca",
-      "text": "En cuanto aflojan el primer anclaje, el techo cruje y cae un hilo de polvo sobre la mesa. Mantenimiento llega corriendo: esa viga sostiene el forjado y no se mueve sin una obra estructural.",
-      "checkpoint": "cp_viga",
-      "options": [
-        {
-          "id": "checkpoint",
-          "label": "Volver al último checkpoint",
-          "returnToCheckpoint": true
-        }
+      "text": "Quitan la viga.\n\nDurante tres segundos, el reloj se ve perfecto.\n\nDespués se escucha un crujido y cae parte del techo.\n\nLa viga era estructural. Sostenía el forjado.\n\nEl costo de reparar el techo supera varias veces el presupuesto de toda la oficina.",
+      "memoryAdd": [
+        { "id": "viga-estructural", "text": "La viga es estructural y no se puede retirar sin una obra" }
       ],
-      "feedback": "Actuar sobre lo que estorba, sin saber qué sostiene."
+      "options": [
+        { "id": "colecta", "label": "Hacer una colecta para pagar el techo", "next": "colecta", "actionType": "broma" },
+        { "id": "defender", "label": "Explicar que al menos el reloj quedó visible", "next": "defender_viga", "actionType": "broma" },
+        { "id": "volver", "label": "Volver y probar otra cosa", "next": "pintar_viga", "actionType": "decidir" }
+      ]
     },
     {
-      "id": "desvio_comprar",
-      "detour": true,
-      "art": "🛒",
-      "title": "Un reloj nuevo",
-      "text": "Compran uno idéntico y lo cuelgan en el mismo sitio. Tapa el mismo agujero, la viga sigue delante y ahora hay dos relojes: uno en la pared sin que nadie lo mire y otro en un cajón. Nadie ha preguntado todavía para qué servía el primero.",
+      "id": "colecta",
+      "type": "detour",
+      "title": "Presupuesto participativo",
+      "art": "🫙",
+      "text": "La colecta recauda exactamente lo suficiente para comprar cinta adhesiva y un café.\n\nEl techo sigue abierto.",
       "options": [
-        {
-          "id": "checkpoint",
-          "label": "Volver al último checkpoint",
-          "returnToCheckpoint": true
-        }
-      ],
-      "feedback": "Reemplazar un objeto no responde a para qué servía."
+        { "id": "volver", "label": "Volver y probar otra cosa", "next": "pintar_viga", "actionType": "decidir" },
+        { "id": "aceptar", "label": "Aceptar que el reloj quedó visible", "next": "defender_viga", "actionType": "broma" }
+      ]
     },
     {
-      "id": "desvio_tapar",
-      "detour": true,
-      "art": "🙈",
+      "id": "defender_viga",
+      "type": "detour",
+      "title": "Técnicamente visible",
+      "art": "😶",
+      "text": "El jefe observa el agujero del techo.\n\n«Sí, pero el reloj se ve increíble.»\n\nNadie sabe qué responder.",
+      "options": [
+        { "id": "volver", "label": "Volver y probar otra cosa", "next": "pintar_viga", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "pregunta_viga",
+      "type": "scene",
+      "title": "La restricción",
+      "art": "📐",
+      "text": "La viga se instaló durante una reforma posterior al reloj.\n\nEs estructural y sostiene parte del techo.\n\nEl reloj quedó detrás porque alguien decidió conservarlo sin mover la instalación.",
+      "memoryAdd": [
+        { "id": "viga-posterior", "text": "La viga se añadió después del reloj y sostiene el techo" }
+      ],
+      "options": [
+        { "id": "preguntar_reloj", "label": "Preguntar por qué no movieron el reloj", "next": "pregunta_decision_antigua", "actionType": "preguntar" },
+        { "id": "preguntar_funcion", "label": "Preguntar qué función sigue cumpliendo el reloj", "next": "pregunta_funcion", "actionType": "preguntar" },
+        { "id": "mirar_pared", "label": "Revisar qué hay detrás del reloj", "next": "mover_reloj", "actionType": "observar" },
+        { "id": "insistir_viga", "label": "Insistir en quitar la viga", "next": "quitar_viga", "actionType": "actuar" }
+      ]
+    },
+    {
+      "id": "pregunta_decision_antigua",
+      "type": "scene",
+      "title": "Siempre estuvo ahí",
+      "art": "🗿",
+      "text": "Nadie sabe exactamente quién decidió dejar el reloj en ese lugar.\n\nLa explicación más repetida es:\n\n«Siempre estuvo ahí.»",
+      "memoryAdd": [
+        { "id": "decision-heredada", "text": "La posición actual del reloj parece una decisión heredada, no una necesidad comprobada" }
+      ],
+      "options": [
+        { "id": "preguntar_funcion", "label": "Preguntar qué función cumple hoy", "next": "pregunta_funcion", "actionType": "preguntar" },
+        { "id": "mover_reloj", "label": "Moverlo con cuidado", "next": "mover_reloj", "actionType": "observar" },
+        { "id": "aceptar_costumbre", "label": "Aceptar que siempre estuvo ahí", "next": "decision_nostalgia", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "mover_reloj",
+      "type": "scene",
+      "title": "Algo detrás",
+      "art": "⭕",
+      "text": "Mueven el reloj unos centímetros.\n\nQueda una marca circular y aparece un agujero con un cable suelto.\n\nEl reloj no estaba simplemente colgado: estaba cubriendo algo.",
+      "memoryAdd": [
+        { "id": "agujero-instalacion", "text": "El reloj ocultaba un agujero con una instalación antigua" }
+      ],
+      "options": [
+        { "id": "tapar", "label": "Tapar el agujero", "next": "tapar_agujero", "actionType": "actuar" },
+        { "id": "volver", "label": "Volver a poner el reloj donde estaba", "next": "volver_reloj", "actionType": "actuar" },
+        { "id": "preguntar_cable", "label": "Preguntar qué había conectado ese cable", "next": "pregunta_cable", "actionType": "preguntar" },
+        { "id": "preguntar_agujero", "label": "Preguntar por qué el reloj estaba tapando el agujero", "next": "pregunta_agujero", "actionType": "preguntar" }
+      ]
+    },
+    {
+      "id": "pregunta_agujero",
+      "type": "scene",
+      "title": "Un parche con historia",
+      "art": "🩹",
+      "text": "Nadie recuerda una decisión formal.\n\nEn algún momento alguien colgó el reloj justo ahí, y el agujero dejó de existir para la oficina.\n\nEl cable, en cambio, sigue existiendo.",
+      "memoryAdd": [
+        { "id": "parche-heredado", "text": "El reloj se colgó como parche para ocultar la instalación" }
+      ],
+      "options": [
+        { "id": "cable", "label": "Preguntar qué había conectado ese cable", "next": "pregunta_cable", "actionType": "preguntar" },
+        { "id": "antigua", "label": "Preguntar quién tomó esa decisión", "next": "pregunta_decision_antigua", "actionType": "preguntar" },
+        { "id": "volver", "label": "Volver al agujero", "next": "mover_reloj", "actionType": "observar" }
+      ]
+    },
+    {
+      "id": "tapar_agujero",
+      "type": "detour",
+      "title": "Que no se vea",
+      "art": "⚡",
+      "text": "Tapan el agujero rápidamente, pero dejan los cables sueltos dentro.\n\nSe escucha un chispazo y toda la oficina se queda sin luz.",
+      "memoryAdd": [
+        { "id": "cable-sin-entender", "text": "El cable no podía taparse sin entender la instalación" }
+      ],
+      "options": [
+        { "id": "casa", "label": "Nos vamos a trabajar desde casa", "next": "volver_agujero", "actionType": "broma" },
+        { "id": "culpar", "label": "Decimos que fue una falla previa", "next": "volver_agujero", "actionType": "broma" },
+        { "id": "volver", "label": "Probemos otra cosa", "next": "volver_agujero", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "volver_agujero",
+      "type": "detour",
+      "title": "Problema visual resuelto",
+      "art": "🌑",
+      "text": "El agujero ya no se ve.\n\nTampoco se ve la oficina, porque no hay luz.\n\nEl equipo vuelve al punto anterior con una certeza nueva: ocultar algo no equivale a resolverlo.",
+      "options": [
+        { "id": "revisar", "label": "Revisar el agujero con cuidado", "next": "mover_reloj", "actionType": "observar" },
+        { "id": "volver_reloj", "label": "Volver a poner el reloj", "next": "volver_reloj", "actionType": "actuar" }
+      ]
+    },
+    {
+      "id": "volver_reloj",
+      "type": "detour",
       "title": "Como estaba",
-      "text": "Vuelven a colgarlo en el mismo clavo, tapando la marca. Todo está exactamente igual que a las 11:42, pero con menos tiempo.",
-      "options": [
-        {
-          "id": "checkpoint",
-          "label": "Volver al último checkpoint",
-          "returnToCheckpoint": true
-        }
+      "art": "🙈",
+      "text": "Vuelven a colgar el reloj exactamente donde estaba.\n\nTodo parece igual que antes, pero ahora saben que detrás hay un cable suelto y un agujero.",
+      "memoryAdd": [
+        { "id": "apariencia-no-resuelve", "text": "Volver a la apariencia anterior no elimina lo que está oculto" }
       ],
-      "feedback": "Dejarlo como estaba es la decisión que ya se tomó hace tres años."
+      "options": [
+        { "id": "aceptar", "label": "Aceptar que quedó como estaba", "next": "jefe_como_estaba", "actionType": "decidir" },
+        { "id": "preguntar", "label": "Preguntar qué había detrás", "next": "pregunta_cable", "actionType": "preguntar" },
+        { "id": "mover", "label": "Moverlo otra vez y revisar con cuidado", "next": "mover_reloj", "actionType": "observar" }
+      ]
     },
     {
-      "id": "conclusion",
-      "art": "🧩",
-      "title": "Las piezas encajan",
-      "text": "Con lo que hay en el tablero la historia ya se sostiene: el reloj no da la hora, está tapando un agujero de una instalación antigua, sustituyó a un reloj digital que servía para coordinar Ecuador y España, y esa coordinación hoy se resuelve en Teams. Queda decidir qué se hace.",
+      "id": "jefe_como_estaba",
+      "type": "detour",
+      "title": "¿Qué arreglaron?",
+      "art": "🤷",
+      "text": "El jefe vuelve a mirar la pared.\n\n«¿Y qué arreglaron?»\n\nEl equipo responde:\n\n«La tranquilidad.»",
       "options": [
-        {
-          "id": "retirar",
-          "label": "Retirar el reloj y reparar la pared",
-          "next": "final_retirar"
-        },
-        {
-          "id": "conservar",
-          "label": "Retirarlo, repararlo y guardarlo con su historia",
-          "next": "final_conservar"
-        },
-        {
-          "id": "no_reemplazar",
-          "label": "Reparar la pared y no colgar nada",
-          "next": "final_no_reemplazar"
-        }
+        { "id": "volver", "label": "Volver al agujero", "next": "mover_reloj", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "pregunta_cable",
+      "type": "scene",
+      "title": "El reloj anterior",
+      "art": "🔌",
+      "text": "Antes había allí un reloj mundial digital.\n\nMostraba la hora de Ecuador y España.\n\nEl cable formaba parte de esa instalación.",
+      "memoryAdd": [
+        { "id": "reloj-mundial", "text": "Antes había un reloj mundial digital" },
+        { "id": "funcion-espana", "text": "Mostraba la hora de Ecuador y España" }
+      ],
+      "options": [
+        { "id": "comprar", "label": "Comprar otro reloj mundial", "next": "comprar_reloj", "actionType": "actuar" },
+        { "id": "preguntar_necesidad", "label": "Preguntar por qué necesitaban saber la hora de España", "next": "pregunta_espana", "actionType": "preguntar" },
+        { "id": "preguntar_actual", "label": "Preguntar cómo se resuelve hoy", "next": "funcion_actual", "actionType": "preguntar" },
+        { "id": "volver", "label": "Volver a poner el reloj donde estaba", "next": "volver_reloj", "actionType": "actuar" }
+      ]
+    },
+    {
+      "id": "comprar_reloj",
+      "type": "detour",
+      "title": "Reemplazar el objeto",
+      "art": "🛒",
+      "text": "Compran otro reloj mundial, lo conectan y muestran la hora de España.\n\nAhora el reloj funciona, el agujero sigue mal resuelto, la viga sigue delante y nadie ha demostrado que alguien necesite mirar esa hora.",
+      "options": [
+        { "id": "mas_grande", "label": "Comprar uno más grande", "next": "comprar_reloj_mas_grande", "actionType": "actuar" },
+        { "id": "pantalla", "label": "Poner una pantalla digital", "next": "pantalla_digital", "actionType": "actuar" },
+        { "id": "preguntar", "label": "Preguntar si alguien consulta esa información", "next": "pregunta_consulta", "actionType": "preguntar" },
+        { "id": "volver", "label": "Volver a investigar", "next": "pregunta_cable", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "comprar_reloj_mas_grande",
+      "type": "detour",
+      "title": "Ahora sí se ve",
+      "art": "🕰️",
+      "text": "Compran un reloj más grande.\n\nAhora se ve mejor, pesa más y tapa una zona todavía mayor de la pared.\n\nLa viga continúa en el mismo lugar.",
+      "options": [
+        { "id": "volver", "label": "Volver a investigar", "next": "pregunta_cable", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "pantalla_digital",
+      "type": "detour",
+      "title": "Transformación digital",
+      "art": "📺",
+      "text": "Sustituyen el reloj por una pantalla digital.\n\nLa pantalla necesita mantenimiento, conexión y un presupuesto nuevo.\n\nMuestra una información que todavía nadie ha demostrado necesitar.",
+      "options": [
+        { "id": "volver", "label": "Volver a investigar", "next": "pregunta_cable", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "pregunta_espana",
+      "type": "scene",
+      "title": "La función original",
+      "art": "🌍",
+      "text": "Cuando se usaba fax y las llamadas internacionales eran menos previsibles, era importante saber si España estaba dentro del horario laboral.\n\nEl reloj evitaba llamadas fuera de hora.",
+      "memoryAdd": [
+        { "id": "funcion-original", "text": "La función original era coordinar horarios y evitar llamadas fuera de hora" }
+      ],
+      "options": [
+        { "id": "actual", "label": "Preguntar cómo se resuelve hoy", "next": "funcion_actual", "actionType": "preguntar" },
+        { "id": "cuando", "label": "Preguntar cuándo dejó de ser necesario", "next": "pregunta_cuando", "actionType": "preguntar" },
+        { "id": "quien", "label": "Preguntar quién consultaba el reloj", "next": "pregunta_consulta", "actionType": "preguntar" },
+        { "id": "nostalgia", "label": "Conservarlo por si algún día vuelve a hacer falta", "next": "decision_nostalgia", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "funcion_actual",
+      "type": "scene",
+      "title": "La función migró",
+      "art": "💻",
+      "text": "Hoy Teams muestra la disponibilidad y el horario de cada país.\n\nLa información está disponible en todas las pantallas.\n\nLa función existe, pero ya no depende de ese reloj.",
+      "memoryAdd": [
+        { "id": "funcion-teams", "text": "Teams reemplazó la función práctica del reloj" },
+        { "id": "funcion-sin-objeto", "text": "La necesidad original ya no depende del objeto físico" }
+      ],
+      "options": [
+        { "id": "consultar", "label": "Preguntar si alguien sigue mirando el reloj", "next": "pregunta_consulta", "actionType": "preguntar" },
+        { "id": "problema", "label": "Preguntar qué problema queda por resolver", "next": "pregunta_final", "actionType": "preguntar" },
+        { "id": "pilas", "label": "Comprar pilas y hacerlo funcionar", "next": "poner_pilas", "actionType": "actuar" },
+        { "id": "decision", "label": "Volver a la decisión sobre el reloj", "next": "pregunta_final", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "pregunta_cuando",
+      "type": "scene",
+      "title": "La necesidad cambió",
+      "art": "📅",
+      "text": "Dejó de ser necesario cuando las llamadas y la coordinación empezaron a gestionarse con herramientas que muestran disponibilidad y zona horaria.\n\nNadie retiró el reloj. Simplemente dejó de tener una razón clara para estar allí.",
+      "memoryAdd": [
+        { "id": "inercia", "text": "La función desapareció gradualmente, pero el objeto permaneció por inercia" }
+      ],
+      "options": [
+        { "id": "presente", "label": "Preguntar quién lo usa hoy", "next": "pregunta_consulta", "actionType": "preguntar" },
+        { "id": "pared", "label": "Preguntar qué problema queda en la pared", "next": "pregunta_final", "actionType": "preguntar" },
+        { "id": "pilas", "label": "Comprar pilas", "next": "poner_pilas", "actionType": "actuar" }
+      ]
+    },
+    {
+      "id": "pregunta_consulta",
+      "type": "scene",
+      "title": "Alguien, en teoría",
+      "art": "💬",
+      "text": "Nadie puede decir quién lo consulta exactamente.\n\nLas respuestas son:\n\n«A veces.»\n«Creo que sí.»\n«Sería raro no tenerlo.»",
+      "options": [
+        { "id": "aceptar", "label": "Tomar esas respuestas como prueba suficiente", "next": "decision_nostalgia", "actionType": "decidir" },
+        { "id": "persona", "label": "Preguntar por una persona concreta", "next": "consulta_persona", "actionType": "preguntar" },
+        { "id": "retirar", "label": "Preguntar qué pasa si lo retiramos", "next": "pregunta_final", "actionType": "preguntar" },
+        { "id": "volver", "label": "Volver a la función actual", "next": "funcion_actual", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "consulta_persona",
+      "type": "scene",
+      "title": "¿Quién exactamente?",
+      "art": "🔦",
+      "text": "Preguntan por una persona concreta.\n\nNadie aparece.\n\nEl reloj tenía usuarios imaginarios, pero no usuarios identificables.",
+      "memoryAdd": [
+        { "id": "sin-usuarios", "text": "No aparece una persona concreta que dependa del reloj" }
+      ],
+      "options": [
+        { "id": "retirar", "label": "Preguntar qué pasa si lo retiramos", "next": "pregunta_final", "actionType": "preguntar" },
+        { "id": "nostalgia", "label": "Dejarlo por si alguien lo extraña", "next": "decision_nostalgia", "actionType": "decidir" },
+        { "id": "volver", "label": "Volver a investigar", "next": "funcion_actual", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "poner_pilas",
+      "type": "detour",
+      "title": "El reloj funciona",
+      "art": "🔋",
+      "text": "Compran pilas.\n\nEl reloj vuelve a funcionar, pero muestra una hora incorrecta porque nadie lo configuró.\n\nAdemás, sigue parcialmente tapado por la viga.",
+      "memoryAdd": [
+        { "id": "funciona-no-necesario", "text": "El reloj puede funcionar físicamente, pero eso no demuestra que cumpla una función necesaria" }
+      ],
+      "options": [
+        { "id": "configurar", "label": "Configurar la hora y dejarlo donde está", "next": "reloj_funciona", "actionType": "actuar" },
+        { "id": "mover", "label": "Moverlo para que se vea completo", "next": "mover_reloj", "actionType": "observar" },
+        { "id": "preguntar", "label": "Preguntar si alguien necesita esa hora", "next": "pregunta_consulta", "actionType": "preguntar" },
+        { "id": "volver", "label": "Volver a la decisión sobre el reloj", "next": "pregunta_final", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "reloj_funciona",
+      "type": "detour",
+      "title": "El reloj funciona. La solución no.",
+      "art": "🕛",
+      "text": "El reloj muestra la hora correcta.\n\nLa viga sigue tapándolo.\n\nLa pared sigue viéndose mal.\n\nLa función original ya está resuelta en otro sistema.",
+      "options": [
+        { "id": "jefe", "label": "Esperar al jefe", "next": "jefe_funciona", "actionType": "broma" },
+        { "id": "mover", "label": "Moverlo para que se vea completo", "next": "mover_reloj", "actionType": "observar" },
+        { "id": "retirar", "label": "Preguntar si todavía hace falta", "next": "pregunta_final", "actionType": "preguntar" }
+      ]
+    },
+    {
+      "id": "jefe_funciona",
+      "type": "detour",
+      "title": "¿Entonces?",
+      "art": "🧍",
+      "text": "El jefe regresa.\n\n«¿Ya está?»\n\nEl reloj funciona, pero sigue tapado y la pared sigue horrible.\n\nEl equipo descubre que arreglar una propiedad del objeto no equivale a resolver el encargo.",
+      "options": [
+        { "id": "volver", "label": "Volver a la decisión", "next": "pregunta_final", "actionType": "decidir" }
+      ]
+    },
+    {
+      "id": "decision_nostalgia",
+      "type": "scene",
+      "title": "Es nuestra memoria",
+      "art": "🏺",
+      "text": "Algunas personas se quejan:\n\n«Es una reliquia.»\n«Forma parte de la memoria de la oficina.»\n«No deberíamos quitar nuestra historia.»\n\nEl jefe también parece cansado de recibir respuestas distintas.",
+      "options": [
+        { "id": "dejar", "label": "Dejarlo donde está por nostalgia", "next": "final_dejar", "actionType": "decidir" },
+        { "id": "regalar", "label": "Retirarlo y regalarlo a quien quiere conservarlo", "next": "final_regalar", "actionType": "decidir" },
+        { "id": "guardar", "label": "Reparar la pared y guardarlo con su historia", "next": "final_guardar", "actionType": "decidir" },
+        { "id": "preguntar", "label": "Preguntar qué problema sigue resolviendo", "next": "pregunta_final", "actionType": "preguntar" }
+      ]
+    },
+    {
+      "id": "pregunta_final",
+      "type": "convergence",
+      "title": "¿Qué estamos intentando resolver?",
+      "art": "🧩",
+      "text": "Ya sabemos que la viga sostiene el techo, que el reloj ocultaba una instalación antigua y que su función original se trasladó a Teams.\n\nEl reloj no tiene una necesidad actual demostrada y la pared sí necesita reparación.\n\nEl jefe pidió que el reloj se viera mejor.\n\n¿Qué problema estamos resolviendo realmente?",
+      "options": [
+        { "id": "pared", "label": "Que la pared deje de verse mal", "next": "decision_final", "actionType": "decidir" },
+        { "id": "funcion", "label": "Que vuelva a existir una herramienta para consultar la hora de España", "next": "decision_funcion", "actionType": "decidir" },
+        { "id": "memoria", "label": "Que la oficina conserve su historia", "next": "decision_nostalgia", "actionType": "decidir" },
+        { "id": "duda", "label": "Todavía no estamos seguros", "next": "pregunta_consulta", "actionType": "preguntar" }
+      ]
+    },
+    {
+      "id": "decision_final",
+      "type": "convergence",
+      "title": "La intervención",
+      "art": "🛠️",
+      "text": "El equipo ya no necesita salvar el reloj para resolver el problema.\n\nLa viga no se toca.\n\nLa instalación antigua debe revisarse y el agujero debe repararse.\n\nLa memoria puede conservarse sin mantener el objeto como solución activa.",
+      "options": [
+        { "id": "retirar_reparar", "label": "Retirar el reloj y reparar la pared", "next": "final_retirar", "actionType": "decidir" },
+        { "id": "guardar_historia", "label": "Retirarlo, reparar la pared y conservar su historia", "next": "final_guardar", "actionType": "decidir" },
+        { "id": "mantener", "label": "Dejarlo donde está porque todavía puede servir", "next": "final_dejar", "actionType": "decidir" },
+        { "id": "reemplazar", "label": "Reemplazarlo por un reloj nuevo", "next": "final_reemplazar", "actionType": "decidir" }
       ]
     },
     {
       "id": "final_retirar",
       "type": "ending",
+      "title": "La pared volvió a ser una pared",
       "art": "🧱",
-      "title": "Retirar y reparar",
-      "text": "El reloj desaparece de la pared. El agujero se tapa, se pinta y la viga se queda donde estaba, sosteniendo el techo. La función ya estaba resuelta en otro sitio. La pared volvió a ser una pared."
+      "text": "Retiran el reloj, revisan la instalación, reparan el agujero y dejan la viga donde estaba.\n\nLa función original ya estaba resuelta en Teams.\n\nLa pared dejó de cargar con una solución que ya no necesitaba."
     },
     {
-      "id": "final_conservar",
+      "id": "final_guardar",
       "type": "ending",
+      "title": "La memoria no tenía que seguir trabajando",
       "art": "📦",
-      "title": "Conservar la historia",
-      "text": "El reloj baja a una repisa de la entrada, con una etiqueta pequeña que cuenta para qué servía: coordinar dos husos horarios antes de que existiera esta forma de trabajar. La pared, reparada. No destruiste la memoria: sólo dejaste de usarla como solución."
+      "text": "Retiran el reloj, reparan la pared y lo colocan en una repisa con una pequeña explicación de su historia.\n\nNo destruyeron la memoria.\n\nSolo dejaron de usarla como solución."
     },
     {
-      "id": "final_no_reemplazar",
+      "id": "final_regalar",
       "type": "ending",
-      "art": "✨",
-      "title": "No reemplazarlo",
-      "text": "Alguien propone comprar otro reloj. El equipo comprueba la necesidad real: la hora está en cada pantalla y los husos horarios en Teams. Deciden no colgar nada. La pared queda limpia y el reloj antiguo, guardado. El mejor reemplazo fue no reemplazarlo."
+      "title": "Una reliquia con nuevo dueño",
+      "art": "🎁",
+      "text": "El reloj se lo lleva la persona que quería conservarlo.\n\nLa pared se repara.\n\nLa nostalgia sobrevivió, pero ya no tiene que decidir cómo funciona la oficina."
+    },
+    {
+      "id": "final_dejar",
+      "type": "ending",
+      "title": "La memoria ganó",
+      "art": "🕸️",
+      "text": "El reloj permanece en la pared.\n\nNadie puede demostrar que lo necesite, no tiene pilas y sigue parcialmente tapado.\n\nSe conservó la memoria, pero el problema visual no se resolvió."
+    },
+    {
+      "id": "final_reemplazar",
+      "type": "ending",
+      "title": "Un reloj nuevo para el mismo problema",
+      "art": "🆕",
+      "text": "Compran un reloj nuevo y lo colocan en el mismo lugar.\n\nLa viga sigue ahí, la pared sigue necesitando reparación y la función continúa resuelta en Teams.\n\nSe reemplazó el objeto. No se resolvió el problema."
+    },
+    {
+      "id": "decision_funcion",
+      "type": "ending",
+      "title": "La función ya estaba resuelta",
+      "art": "✅",
+      "text": "El equipo revisa la necesidad original y confirma que Teams ya muestra la disponibilidad y los horarios.\n\nNo hace falta volver a construir una solución para una función que ya existe.\n\nEl problema no era la ausencia de información. Era la permanencia de un objeto antiguo."
     }
-  ],
-  "deck": [
-    {
-      "id": "obj_pila",
-      "slot": "objeto",
-      "round": 1,
-      "key": true,
-      "text": "La pila está agotada."
-    },
-    {
-      "id": "obj_detenido",
-      "slot": "objeto",
-      "round": 1,
-      "key": true,
-      "text": "Las manecillas están detenidas desde hace años."
-    },
-    {
-      "id": "obj_decorativo",
-      "slot": "objeto",
-      "round": 2,
-      "text": "El reloj sigue funcionando como objeto decorativo, pero no cumple una función horaria."
-    },
-    {
-      "id": "obj_marca",
-      "slot": "objeto",
-      "round": 3,
-      "text": "Tiene una marca de fabricación anterior al sistema actual de comunicación."
-    },
-    {
-      "id": "par_marca",
-      "slot": "pared",
-      "round": 1,
-      "text": "Al retirar parcialmente el reloj aparece una marca circular."
-    },
-    {
-      "id": "par_agujero",
-      "slot": "pared",
-      "round": 1,
-      "key": true,
-      "text": "Detrás hay un agujero."
-    },
-    {
-      "id": "par_instalacion",
-      "slot": "pared",
-      "round": 2,
-      "key": true,
-      "text": "El agujero corresponde a una instalación antigua."
-    },
-    {
-      "id": "par_parche",
-      "slot": "pared",
-      "round": 2,
-      "key": true,
-      "text": "El reloj fue colocado para ocultar el agujero."
-    },
-    {
-      "id": "vig_estructural",
-      "slot": "viga",
-      "round": 1,
-      "key": true,
-      "text": "La viga es estructural: sostiene el forjado del techo."
-    },
-    {
-      "id": "vig_mantenimiento",
-      "slot": "viga",
-      "round": 2,
-      "text": "Mantenimiento avisa: no se puede tocar sin una obra."
-    },
-    {
-      "id": "vig_reforma",
-      "slot": "viga",
-      "round": 2,
-      "text": "La viga se añadió en una reforma posterior al reloj."
-    },
-    {
-      "id": "pas_digital",
-      "slot": "pasado",
-      "round": 2,
-      "key": true,
-      "text": "Antes había un reloj digital en esa pared."
-    },
-    {
-      "id": "pas_husos",
-      "slot": "pasado",
-      "round": 2,
-      "key": true,
-      "text": "El reloj digital mostraba la hora de Ecuador y de España."
-    },
-    {
-      "id": "pas_llamadas",
-      "slot": "pasado",
-      "round": 3,
-      "text": "Servía para evitar llamadas fuera del horario laboral."
-    },
-    {
-      "id": "pas_averia",
-      "slot": "pasado",
-      "round": 3,
-      "text": "El reloj digital dejó de funcionar y nadie lo reparó."
-    },
-    {
-      "id": "pas_relevo",
-      "slot": "pasado",
-      "round": 3,
-      "text": "Después de retirarlo, alguien colgó un reloj de pared para cubrir el agujero."
-    },
-    {
-      "id": "pre_teams",
-      "slot": "presente",
-      "round": 3,
-      "key": true,
-      "text": "Teams muestra los horarios y la disponibilidad de cada país."
-    },
-    {
-      "id": "pre_nadie",
-      "slot": "presente",
-      "round": 3,
-      "text": "Nadie mira esa pared para saber si puede llamar a España."
-    },
-    {
-      "id": "pre_pantallas",
-      "slot": "presente",
-      "round": 2,
-      "text": "La hora está en todas las pantallas de la oficina."
-    },
-    {
-      "id": "ofi_siempre",
-      "slot": "oficina",
-      "round": 1,
-      "noise": true,
-      "text": "«Ese reloj siempre estuvo ahí»."
-    },
-    {
-      "id": "ofi_rara",
-      "slot": "oficina",
-      "round": 1,
-      "noise": true,
-      "text": "«La oficina se va a ver rara si lo quitamos»."
-    },
-    {
-      "id": "ofi_trajo",
-      "slot": "oficina",
-      "round": 2,
-      "noise": true,
-      "text": "«Lo trajo alguien que ya no trabaja aquí»."
-    },
-    {
-      "id": "ofi_espana",
-      "slot": "oficina",
-      "round": 2,
-      "noise": true,
-      "text": "«Era importante para comunicarnos con España»."
-    },
-    {
-      "id": "ofi_consultan",
-      "slot": "oficina",
-      "round": 3,
-      "noise": true,
-      "text": "«Alguien dice que todavía lo consultan»."
-    }
-  ],
-  "checkpoints": [
-    {
-      "id": "cp_viga",
-      "label": "La viga no se toca",
-      "note": "No retirar la viga sin una obra estructural.",
-      "whenCard": "vig_estructural"
-    },
-    {
-      "id": "cp_agujero",
-      "label": "El reloj oculta un agujero",
-      "note": "El reloj está cubriendo una instalación antigua.",
-      "whenCard": "par_agujero"
-    },
-    {
-      "id": "cp_parado",
-      "label": "El reloj no funciona",
-      "note": "El reloj no cumple actualmente una función horaria.",
-      "whenCard": "obj_pila"
-    },
-    {
-      "id": "cp_obsoleto",
-      "label": "La función original está obsoleta",
-      "note": "La necesidad original ya no existe de la misma manera.",
-      "whenCards": [
-        "pas_digital",
-        "pas_husos",
-        "pre_teams"
-      ]
-    }
-  ],
-  "conclusion": {
-    "sceneId": "conclusion",
-    "requiredSlots": [
-      "objeto",
-      "pared",
-      "pasado",
-      "presente"
-    ],
-    "hint": "Falta evidencia sobre: "
-  },
-  "summary": {
-    "title": "Solución encontrada",
-    "leadLabel": "Tiempo de análisis",
-    "reading": "El jefe pidió una solución antes de las 12:00. Tardasteis {elapsed} en descubrir cuál era el problema.",
-    "closing": "No tardamos demasiado en resolverlo. Tardamos en darnos cuenta de qué había que resolver.",
-    "labels": {
-      "timeToFirstAction": "Primera intervención",
-      "timeToFirstInvestigation": "Primera investigación",
-      "timeToConclusion": "Solución informada",
-      "detours": "Desvíos",
-      "cardsDrawn": "Evidencias consultadas",
-      "keyCards": "Evidencias clave",
-      "noiseCards": "Rumores tomados en serio"
-    }
-  }
+  ]
 }

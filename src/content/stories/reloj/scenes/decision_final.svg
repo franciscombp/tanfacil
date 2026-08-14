@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" role="img">
+  <defs>
+    <radialGradient id="sheen" cx="42%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.12"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="480" fill="#b9b5ad"/>
+  <rect width="800" height="480" fill="url(#sheen)"/>
+  <g stroke="#a29e96" stroke-width="2" opacity="0.7">
+    <line x1="0" y1="120" x2="800" y2="120"/>
+    <line x1="0" y1="250" x2="800" y2="250"/>
+    <line x1="0" y1="380" x2="800" y2="380"/>
+  </g>
+    <g>
+      <rect x="120" y="160" width="160" height="160" rx="12" fill="#efede4"/>
+      <path d="M160 260 l30 26 l60 -60" stroke="#4ea87a" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="320" y="160" width="160" height="160" rx="12" fill="#efede4"/>
+      <rect x="352" y="230" width="96" height="56" rx="6" fill="#a8845c"/>
+      <path d="M352 230 l48 -28 l48 28" stroke="#8a6b48" stroke-width="8" fill="none"/>
+      <rect x="520" y="160" width="160" height="160" rx="12" fill="#efede4"/>
+      
+  <g >
+    <circle cx="604" cy="248" r="60" fill="#00000022"/>
+    <circle cx="600" cy="240" r="60" fill="#26262a"/>
+    <circle cx="600" cy="240" r="52" fill="#f2f0e9"/>
+    <text x="620" y="209" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">1</text><text x="635" y="224" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">2</text><text x="641" y="244" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">3</text><text x="635" y="264" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">4</text><text x="620" y="279" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">5</text><text x="600" y="284" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">6</text><text x="580" y="279" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">7</text><text x="565" y="264" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">8</text><text x="559" y="244" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">9</text><text x="565" y="224" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">10</text><text x="580" y="209" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">11</text><text x="600" y="203" font-size="11" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">12</text><text x="614" y="218" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">13</text><text x="625" y="228" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">14</text><text x="629" y="243" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">15</text><text x="625" y="257" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">16</text><text x="614" y="267" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">17</text><text x="600" y="271" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">18</text><text x="586" y="267" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">19</text><text x="575" y="257" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">20</text><text x="571" y="243" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">21</text><text x="575" y="228" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">22</text><text x="586" y="218" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">23</text><text x="600" y="214" font-size="6" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">00</text>
+    <line x1="600" y1="240" x2="575" y2="239" stroke="#1d1d21" stroke-width="2.6" stroke-linecap="round"/>
+    <line x1="600" y1="240" x2="618" y2="208" stroke="#1d1d21" stroke-width="1.8200000000000003" stroke-linecap="round"/>
+    
+    <circle cx="600" cy="240" r="2.34" fill="#1d1d21"/>
+    <path d="M561 258.2 l57.2 -44.199999999999996 l9.36 6.24 l-57.2 44.199999999999996z" fill="#ffffff" opacity="0.18"/>
+    <path d="M566.2 272.24 l62.4 -47.84 l4.16 3.12 l-62.4 47.84z" fill="#ffffff" opacity="0.12"/>
+  </g>
+    </g>
+</svg>

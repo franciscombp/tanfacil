@@ -3,13 +3,14 @@ import {
   applyOption,
   forceOption,
   initialState,
+  jumpToScene,
   leadersOf,
-  missingSlots,
+  optionViews,
   resolveVote,
-  sceneWithConclusion,
   tally,
+  votableOptions,
 } from '@/engine/rules'
-import type { GameMetrics, GameState } from '@/engine/types'
+import type { Fact, GameMetrics, GameState } from '@/engine/types'
 import { useRoom, type RoomPresence, type RoomRole } from '@/realtime/useRoom'
 import { story } from './story'
 
@@ -19,7 +20,7 @@ import { story } from './story'
  * Un solo participante —el anfitrión— ejecuta las reglas y emite el estado;
  * el resto lo replica. El anfitrión es el admin si hay uno conectado; si no,
  * el jugador más antiguo, para que la sala nunca se quede bloqueada. El admin
- * modera (no vota) y ve la misma interfaz que el resto.
+ * facilita (no vota) y ve la misma interfaz que el resto.
  */
 
 const ROOM = `room:${story.id}`
@@ -157,9 +158,15 @@ export function useGame(displayName: string, role: RoomRole) {
     }
   }, [state.sceneId, state.round])
 
-  const scene = useMemo(() => sceneWithConclusion(story, state), [state])
+  const scene = story.scenes[state.sceneId] ?? null
 
-  // Sólo votan los jugadores; el admin modera.
+  /** Opciones con su estado: bloqueadas («ya intentado») o fuera del desempate. */
+  const options = useMemo(
+    () => (scene ? optionViews(story, state, scene) : []),
+    [scene, state]
+  )
+
+  // Sólo votan los jugadores; el admin facilita.
   const players = useMemo(
     () => roster.filter((member) => member.role === 'player'),
     [roster]
@@ -173,8 +180,8 @@ export function useGame(displayName: string, role: RoomRole) {
   )
 
   const voteCounts = useMemo(
-    () => (scene ? tally(scene, currentVotes) : {}),
-    [scene, currentVotes]
+    () => (scene ? tally(story, state, scene, currentVotes) : {}),
+    [scene, state, currentVotes]
   )
   const leaders = useMemo(
     () => (scene ? leadersOf(scene, voteCounts) : []),
@@ -193,24 +200,22 @@ export function useGame(displayName: string, role: RoomRole) {
     if (!isHost || !engineReady || !scene) return
 
     if (state.phase === 'voting') {
-      if (scene.options.length === 0) return
-      // Si ya votaron todos, se acorta la espera pero queda margen para
-      // rectificar antes del cierre.
+      if (scene.options.length === 0 || state.paused) return
       const grace = story.timers.allVotedGraceSeconds * 1000
       if (everyoneVoted && state.deadline > now + grace) {
         commit({ ...state, deadline: now + grace })
         return
       }
       if (now >= state.deadline) {
-        commit(resolveVote(story, state, leaders, Boolean(admin), now))
+        commit(resolveVote(story, state, leaders, now))
       }
       return
     }
 
     if (state.phase === 'reveal' && now >= state.deadline && state.winner) {
-      commit(applyOption(story, state, scene, state.winner, now))
+      commit(applyOption(story, state, scene, state.winner, voteCounts, now))
     }
-  }, [isHost, engineReady, scene, state, everyoneVoted, leaders, admin, now, commit])
+  }, [isHost, engineReady, scene, state, everyoneVoted, leaders, voteCounts, now, commit])
 
   // Latido del anfitrión: quien entra tarde converge en segundos.
   useEffect(() => {
@@ -223,21 +228,24 @@ export function useGame(displayName: string, role: RoomRole) {
   // ─── Acciones ────────────────────────────────────────────────────────────
 
   /**
-   * Cualquier admin puede moderar, sea o no el anfitrión técnico (p. ej. con
-   * dos pestañas de admin abiertas, la que proyecta y la que controla). Su
-   * cambio viaja con versión más alta y la sala entera lo adopta.
+   * Cualquier admin puede facilitar, sea o no el anfitrión técnico (p. ej.
+   * con dos pestañas de admin abiertas). Su cambio viaja con versión más alta
+   * y la sala entera lo adopta.
    */
   const canModerate = role === 'admin' || isHost
 
   const vote = useCallback(
     (optionId: string) => {
       if (state.phase !== 'voting' || role !== 'player') return
+      if (!scene) return
+      const allowed = votableOptions(story, stateRef.current, scene)
+      if (!allowed.some((option) => option.id === optionId)) return
       setMyVote(optionId)
     },
-    [state.phase, role]
+    [state.phase, role, scene]
   )
 
-  /** El admin fuerza una opción: resuelve empates o destraba la partida. */
+  /** El facilitador fuerza una opción: empates o destrabar la conversación. */
   const decide = useCallback(
     (optionId: string) => {
       if (!canModerate || !scene) return
@@ -249,7 +257,7 @@ export function useGame(displayName: string, role: RoomRole) {
 
   const closeVoteNow = useCallback(() => {
     if (!canModerate || stateRef.current.phase !== 'voting') return
-    commit({ ...stateRef.current, deadline: Date.now() })
+    commit({ ...stateRef.current, paused: false, deadline: Date.now() })
   }, [canModerate, commit])
 
   const repeatVote = useCallback(() => {
@@ -260,10 +268,36 @@ export function useGame(displayName: string, role: RoomRole) {
       phase: 'voting',
       round: current.round + 1,
       winner: null,
+      paused: false,
+      tiedOptions: null,
       repeatReason: null,
       deadline: Date.now() + story.timers.voteSeconds * 1000,
     })
   }, [canModerate, commit])
+
+  /** Pausa el cierre de la votación; los votos siguen abiertos. */
+  const pauseVote = useCallback(() => {
+    if (!canModerate || stateRef.current.phase !== 'voting') return
+    commit({ ...stateRef.current, paused: true, deadline: 0 })
+  }, [canModerate, commit])
+
+  const resumeVote = useCallback(() => {
+    if (!canModerate || !stateRef.current.paused) return
+    commit({
+      ...stateRef.current,
+      paused: false,
+      deadline: Date.now() + story.timers.voteSeconds * 1000,
+    })
+  }, [canModerate, commit])
+
+  /** Salto directo a una escena (facilitador). */
+  const jumpTo = useCallback(
+    (sceneId: string) => {
+      if (!canModerate) return
+      commit(jumpToScene(story, stateRef.current, sceneId, Date.now()))
+    },
+    [canModerate, commit]
+  )
 
   const restart = useCallback(() => {
     if (!canModerate) return
@@ -287,39 +321,39 @@ export function useGame(displayName: string, role: RoomRole) {
     timeToFirstInvestigation: since(state.firstInvestigationAt),
     timeToConclusion: since(state.solvedAt),
     detours: state.detours,
-    cardsDrawn: state.drawn.length,
-    keyCards: state.drawn.filter((id) => story.cardsById[id]?.key).length,
-    noiseCards: state.drawn.filter((id) => story.cardsById[id]?.noise).length,
+    ties: state.ties,
+    factsDiscovered: state.memory.length,
   }
 
-  const board = useMemo(() => {
-    const grouped: Record<string, typeof story.deck> = {}
-    for (const id of state.drawn) {
-      const card = story.cardsById[id]
-      if (!card) continue
-      grouped[card.slot] = [...(grouped[card.slot] ?? []), card]
-    }
-    return grouped
-  }, [state.drawn])
+  /** La memoria del equipo: hechos descubiertos, en orden. */
+  const memory: Fact[] = useMemo(
+    () =>
+      state.memory
+        .map((id) => story.factsById[id])
+        .filter((fact): fact is Fact => Boolean(fact)),
+    [state.memory]
+  )
 
   return {
     story,
     pid,
     role,
     scene,
+    options,
     status,
     phase: state.phase,
     round: state.round,
+    paused: state.paused,
+    tiedOptions: state.tiedOptions,
     repeatReason: state.repeatReason,
     voteSecondsLeft:
       state.deadline > 0 ? Math.max(0, Math.ceil((state.deadline - now) / 1000)) : null,
     elapsedSeconds,
     pastDeadline,
     metrics,
-    board,
-    missingSlots: missingSlots(story, state.drawn),
-    lastCard: state.lastCard ? (story.cardsById[state.lastCard] ?? null) : null,
-    checkpoints: state.checkpoints,
+    memory,
+    route: state.route,
+    decisionLog: state.log,
     players,
     pendingPlayers,
     admin,
@@ -335,6 +369,9 @@ export function useGame(displayName: string, role: RoomRole) {
     decide,
     closeVoteNow,
     repeatVote,
+    pauseVote,
+    resumeVote,
+    jumpTo,
     restart,
   }
 }

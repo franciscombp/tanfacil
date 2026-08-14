@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" role="img">
+  <defs>
+    <radialGradient id="sheen" cx="42%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.12"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="480" fill="#b9b5ad"/>
+  <rect width="800" height="480" fill="url(#sheen)"/>
+  <g stroke="#a29e96" stroke-width="2" opacity="0.7">
+    <line x1="0" y1="120" x2="800" y2="120"/>
+    <line x1="0" y1="250" x2="800" y2="250"/>
+    <line x1="0" y1="380" x2="800" y2="380"/>
+  </g>
+    <g opacity="0.9">
+      
+  <g >
+    <circle cx="204" cy="178" r="70" fill="#00000022"/>
+    <circle cx="200" cy="170" r="70" fill="#26262a"/>
+    <circle cx="200" cy="170" r="62" fill="#f2f0e9"/>
+    <text x="224" y="133" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">1</text><text x="242" y="150" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">2</text><text x="248" y="175" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">3</text><text x="242" y="199" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">4</text><text x="224" y="217" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">5</text><text x="200" y="223" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">6</text><text x="176" y="217" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">7</text><text x="158" y="199" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">8</text><text x="152" y="175" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">9</text><text x="158" y="150" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">10</text><text x="176" y="133" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">11</text><text x="200" y="126" font-size="14" font-weight="600" fill="#232327" text-anchor="middle" font-family="Georgia, serif">12</text><text x="217" y="144" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">13</text><text x="230" y="156" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">14</text><text x="234" y="173" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">15</text><text x="230" y="190" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">16</text><text x="217" y="203" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">17</text><text x="200" y="207" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">18</text><text x="183" y="203" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">19</text><text x="170" y="190" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">20</text><text x="166" y="173" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">21</text><text x="170" y="156" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">22</text><text x="183" y="144" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">23</text><text x="200" y="139" font-size="7" fill="#9b978d" text-anchor="middle" font-family="Georgia, serif">00</text>
+    <line x1="200" y1="170" x2="170" y2="169" stroke="#1d1d21" stroke-width="3.1" stroke-linecap="round"/>
+    <line x1="200" y1="170" x2="222" y2="132" stroke="#1d1d21" stroke-width="2.1700000000000004" stroke-linecap="round"/>
+    
+    <circle cx="200" cy="170" r="2.79" fill="#1d1d21"/>
+    <path d="M153.5 191.7 l68.2 -52.699999999999996 l11.16 7.4399999999999995 l-68.2 52.699999999999996z" fill="#ffffff" opacity="0.18"/>
+    <path d="M159.7 208.44 l74.39999999999999 -57.04 l4.96 3.7199999999999998 l-74.39999999999999 57.04z" fill="#ffffff" opacity="0.12"/>
+  </g>
+      <rect x="330" y="120" width="26" height="110" fill="#63666a"/>
+      <circle cx="470" cy="170" r="34" fill="#141317"/>
+      
+  <rect x="560" y="140" width="150" height="66" rx="8" fill="#10233d"/>
+  <rect x="560" y="140" width="150" height="66" rx="8" fill="none" stroke="#0a1626" stroke-width="3"/>
+  
+  <text x="576" y="174" font-size="19" fill="#9fc3e8" font-family="monospace">ECU · ESP</text>
+    </g>
+    <g stroke="#3c3c40" stroke-width="3" stroke-dasharray="7 6" fill="none" opacity="0.6">
+      <path d="M262 190 L330 180 M356 180 L436 176 M504 172 L560 170"/>
+      <path d="M200 236 C260 330 540 330 620 210"/>
+    </g>
+    <text x="380" y="400" font-size="72" text-anchor="middle" font-weight="700" fill="#3c3c40" font-family="Georgia, serif">?</text>
+</svg>

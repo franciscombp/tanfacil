@@ -8,31 +8,32 @@ import {
 
 /**
  * Las acciones, grandes y al frente. Los jugadores votan (y pueden cambiar el
- * voto mientras la votación siga abierta); el admin modera y sólo elige
- * directamente cuando hay un empate que destrabar.
+ * voto mientras la votación siga abierta); el admin facilita y no vota. Las
+ * opciones que ya produjeron un desvío aparecen marcadas: «Ya intentamos
+ * esto». En un empate, la segunda votación es sólo entre las empatadas.
  */
 export function OptionsGrid({ game }: { game: Game }) {
   const {
     scene,
+    options,
     role,
     phase,
+    paused,
     repeatReason,
+    tiedOptions,
     myVote,
     vote,
-    decide,
     voteCounts,
     totalCount,
     pendingPlayers,
     winnerOptionId,
-    leaders,
     voteSecondsLeft,
   } = game
 
   if (!scene || scene.type === 'ending') return null
 
-  const revealed = phase === 'reveal' || phase === 'tie'
+  const revealed = phase === 'reveal'
   const isAdmin = role === 'admin'
-  const adminDecidesTie = isAdmin && phase === 'tie'
 
   const pendingNames = pendingPlayers.map((player) => player.name)
   const pendingLabel =
@@ -42,51 +43,62 @@ export function OptionsGrid({ game }: { game: Game }) {
         ? `Faltan: ${pendingNames.join(', ')}`
         : `Faltan ${pendingNames.length} por votar`
 
-  const description =
-    phase === 'tie'
-      ? adminDecidesTie
-        ? 'Empate. Toca la opción ganadora para continuar.'
-        : 'Empate: el anfitrión decide.'
-      : phase === 'reveal'
-        ? `Decidido: «${scene.options.find((o) => o.id === winnerOptionId)?.label}»`
+  const description = revealed
+    ? `Decidido: «${scene.options.find((o) => o.id === winnerOptionId)?.label}»`
+    : paused
+      ? 'Votación en pausa: sigan conversando. Los votos quedan abiertos.'
+      : tiedOptions
+        ? 'Empate. Segunda votación entre las opciones empatadas.'
         : isAdmin
-          ? 'El grupo delibera y vota. Tú moderas.'
+          ? 'El grupo delibera y vota. Tú facilitas.'
           : myVote
             ? pendingLabel ||
               `Voto registrado. Se cierra en ${voteSecondsLeft ?? 0}s y puedes cambiarlo.`
             : repeatReason === 'no_votes'
               ? 'El tiempo terminó sin votos: se repite la votación.'
-              : repeatReason === 'tie'
-                ? 'Hubo empate sin anfitrión: se repite la votación. Debatan y vuelvan a votar.'
-                : 'Debatan y elijan una opción. El voto se puede cambiar hasta el cierre.'
+              : 'Conversen y voten. El voto se puede cambiar hasta el cierre.'
 
   return (
     <Questionnaire className="w-full">
       <QuestionnaireQuestion description={description}>
-        {scene.mode === 'investigate' ? '¿Qué investigamos?' : '¿Qué hacemos?'}
+        ¿Qué hacemos?
       </QuestionnaireQuestion>
 
       <QuestionnaireOptions
-        value={adminDecidesTie ? '' : (myVote ?? '')}
-        onValueChange={adminDecidesTie ? decide : vote}
-        disabled={adminDecidesTie ? false : phase !== 'voting' || isAdmin}
+        value={myVote ?? ''}
+        onValueChange={vote}
+        disabled={phase !== 'voting' || isAdmin}
         className="gap-3"
       >
-        {scene.options.map((option, index) => {
+        {options.map((option, index) => {
           const count = voteCounts[option.id] ?? 0
-          const isLeader = leaders.some((leader) => leader.id === option.id)
+          const votable = !option.disabled && !option.outOfRunoff
           return (
             <QuestionnaireOption
               key={option.id}
               value={option.id}
-              label={option.label}
-              revealed={revealed}
+              disabled={!votable}
+              label={
+                <span className="flex flex-col gap-0.5">
+                  <span className={option.disabled ? 'line-through opacity-60' : ''}>
+                    {option.label}
+                  </span>
+                  {option.disabled && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      Ya intentamos esto
+                    </span>
+                  )}
+                  {option.outOfRunoff && !option.disabled && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      Fuera del desempate
+                    </span>
+                  )}
+                </span>
+              }
+              revealed={revealed && votable}
               count={count}
               share={totalCount > 0 ? (count / totalCount) * 100 : 0}
-              winner={
-                (phase === 'reveal' && winnerOptionId === option.id) ||
-                (phase === 'tie' && isLeader)
-              }
+              winner={revealed && winnerOptionId === option.id}
               className="min-h-16 animate-fade-up p-4 text-base"
               style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'backwards' }}
             />

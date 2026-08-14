@@ -1,102 +1,84 @@
-import { Card, GameState, Scene, SceneOption, Snapshot, Story } from './types'
+import { DecisionLog, GameState, Scene, SceneOption, Story } from './types'
 
 /**
  * Reglas del juego: funciones puras sobre el estado. Las ejecuta sólo el
- * anfitrión; el resto de la sala replica el resultado. Al no depender de React
- * ni de ninguna historia concreta, se prueban de forma aislada.
+ * anfitrión; el resto de la sala replica el resultado.
+ *
+ * Principios (de la especificación):
+ * - Sin mazo, sin puntos, sin derrota: el tiempo sólo se observa.
+ * - La memoria de hechos es acumulativa y nunca se borra.
+ * - Un desvío devuelve a la conversación; la opción que llevó a él queda
+ *   marcada como ya intentada.
+ * - En empate no se decide automáticamente: segunda votación entre las
+ *   opciones empatadas (el facilitador puede forzar una en cualquier momento).
  */
 
-export function initialSnapshot(story: Story): Snapshot {
-  return { sceneId: story.startScene, drawn: [], checkpoints: [] }
-}
-
 export function initialState(story: Story, now: number): GameState {
+  const start = story.scenes[story.startScene]
   return {
     sceneId: story.startScene,
     round: 0,
     phase: 'voting',
     deadline: now + story.timers.voteSeconds * 1000,
     winner: null,
+    paused: false,
+    tiedOptions: null,
+    repeatReason: null,
+    forced: false,
     startedAt: now,
     solvedAt: null,
     firstActionAt: null,
     firstInvestigationAt: null,
     detours: 0,
-    repeatReason: null,
-    drawn: [],
-    lastCard: null,
-    checkpoints: [],
-    saved: initialSnapshot(story),
+    ties: 0,
+    memory: (start?.memoryAdd ?? []).map((fact) => fact.id),
+    tried: [],
+    route: [{ sceneId: story.startScene, at: now }],
+    log: [],
     version: 0,
   }
 }
 
+export interface OptionView extends SceneOption {
+  /** Ya se intentó este camino y produjo un desvío. */
+  disabled: boolean
+  /** En una segunda votación por empate, sólo las empatadas son elegibles. */
+  outOfRunoff: boolean
+}
+
 /**
- * Azar controlado: se reparte por rondas para que las cartas importantes no
- * salgan todas al final y ninguna partida quede bloqueada por suerte.
+ * Opciones de la escena con su estado: las que llevan a un desvío ya visitado
+ * quedan marcadas como «Ya intentamos esto». Si todas quedaran bloqueadas, no
+ * se bloquea ninguna: el grupo nunca debe quedarse sin salida.
  */
-export function drawCard(
-  story: Story,
-  drawn: string[],
-  slot: string,
-  rand: () => number = Math.random
-): Card | null {
-  const available = story.deck.filter((card) => !drawn.includes(card.id))
-  const inSlot = available.filter((card) => card.slot === slot)
-  if (inSlot.length === 0) return available[0] ?? null
-
-  const currentRound = Math.min(3, 1 + Math.floor(drawn.length / 4))
-  const eligible = inSlot.filter((card) => card.round <= currentRound)
-  const pool = eligible.length > 0 ? eligible : inSlot
-
-  const minRound = Math.min(...pool.map((card) => card.round))
-  const front = pool.filter((card) => card.round === minRound)
-  return front[Math.floor(rand() * front.length)] ?? null
-}
-
-/** Checkpoints que se cumplen con las cartas reveladas. */
-export function checkpointsFor(story: Story, drawn: string[]): string[] {
-  return story.checkpoints
-    .filter((checkpoint) => {
-      if (checkpoint.whenCard) return drawn.includes(checkpoint.whenCard)
-      if (checkpoint.whenCards) {
-        return checkpoint.whenCards.every((id) => drawn.includes(id))
-      }
-      return false
-    })
-    .map((checkpoint) => checkpoint.id)
-}
-
-/** Apartados del tablero que aún no tienen una evidencia clave. */
-export function missingSlots(story: Story, drawn: string[]): string[] {
-  const solved = new Set(
-    drawn
-      .map((id) => story.cardsById[id])
-      .filter((card) => card?.key)
-      .map((card) => card.slot)
-  )
-  return story.conclusion.requiredSlots.filter((slot) => !solved.has(slot))
-}
-
-/** La escena, con la opción de concluir cuando la evidencia ya se sostiene. */
-export function sceneWithConclusion(story: Story, state: GameState): Scene | null {
-  const scene = story.scenes[state.sceneId] ?? null
-  if (!scene) return null
-  if (scene.mode !== 'investigate') return scene
-  if (missingSlots(story, state.drawn).length > 0) return scene
-
-  const conclude: SceneOption = {
-    id: '__conclude',
-    label: 'Sacar conclusiones',
-    next: story.conclusion.sceneId,
+export function optionViews(_story: Story, state: GameState, scene: Scene): OptionView[] {
+  const views = scene.options.map((option) => ({
+    ...option,
+    disabled: Boolean(option.next && state.tried.includes(option.next)),
+    outOfRunoff: Boolean(state.tiedOptions && !state.tiedOptions.includes(option.id)),
+  }))
+  if (views.every((view) => view.disabled)) {
+    for (const view of views) view.disabled = false
   }
-  return { ...scene, options: [conclude, ...scene.options] }
+  return views
 }
 
-/** Recuento de votos por opción. */
-export function tally(scene: Scene, votes: string[]): Record<string, number> {
+/** Opciones que se pueden votar ahora mismo. */
+export function votableOptions(story: Story, state: GameState, scene: Scene): OptionView[] {
+  return optionViews(story, state, scene).filter(
+    (view) => !view.disabled && !view.outOfRunoff
+  )
+}
+
+/** Recuento de votos, contando sólo opciones votables. */
+export function tally(
+  story: Story,
+  state: GameState,
+  scene: Scene,
+  votes: string[]
+): Record<string, number> {
   const counts: Record<string, number> = {}
-  for (const option of scene.options) counts[option.id] = 0
+  for (const option of votableOptions(story, state, scene)) counts[option.id] = 0
   for (const vote of votes) {
     if (vote in counts) counts[vote] += 1
   }
@@ -105,22 +87,22 @@ export function tally(scene: Scene, votes: string[]): Record<string, number> {
 
 /** Opciones más votadas: una si hay ganadora, varias si hay empate. */
 export function leadersOf(scene: Scene, counts: Record<string, number>): SceneOption[] {
-  if (scene.options.length === 0) return []
-  const max = Math.max(...scene.options.map((option) => counts[option.id] ?? 0))
+  const eligible = scene.options.filter((option) => option.id in counts)
+  if (eligible.length === 0) return []
+  const max = Math.max(...eligible.map((option) => counts[option.id] ?? 0))
   if (max === 0) return []
-  return scene.options.filter((option) => (counts[option.id] ?? 0) === max)
+  return eligible.filter((option) => (counts[option.id] ?? 0) === max)
 }
 
 /**
- * Cierra la votación: ganadora única → revelado; sin ningún voto → se repite
- * (no hay nada que decidir); empate → decide el admin, y si no hay admin se
- * repite la votación.
+ * Cierra la votación: ganadora única → revelado; sin votos → se repite;
+ * empate → segunda votación entre las opciones empatadas, sin decidir por el
+ * grupo. Los empates se registran para el diagnóstico del facilitador.
  */
 export function resolveVote(
   story: Story,
   state: GameState,
   leaders: SceneOption[],
-  hasAdmin: boolean,
   now: number
 ): GameState {
   if (leaders.length === 1) {
@@ -129,29 +111,36 @@ export function resolveVote(
       phase: 'reveal',
       winner: leaders[0].id,
       repeatReason: null,
+      forced: false,
       deadline: now + story.timers.revealSeconds * 1000,
     }
   }
 
-  const repeat = (reason: 'tie' | 'no_votes'): GameState => ({
+  if (leaders.length === 0) {
+    return {
+      ...state,
+      phase: 'voting',
+      round: state.round + 1,
+      winner: null,
+      tiedOptions: null,
+      repeatReason: 'no_votes',
+      deadline: now + story.timers.voteSeconds * 1000,
+    }
+  }
+
+  return {
     ...state,
     phase: 'voting',
     round: state.round + 1,
     winner: null,
-    repeatReason: reason,
+    tiedOptions: leaders.map((leader) => leader.id),
+    repeatReason: 'tie',
+    ties: state.ties + 1,
     deadline: now + story.timers.voteSeconds * 1000,
-  })
-
-  // Nadie votó: repetir siempre; un "empate" sin votos no existe.
-  if (leaders.length === 0) return repeat('no_votes')
-
-  if (hasAdmin) {
-    return { ...state, phase: 'tie', winner: null, deadline: 0 }
   }
-  return repeat('tie')
 }
 
-/** El anfitrión fuerza una opción (empates, destrabar la partida). */
+/** El facilitador fuerza una opción (empates, destrabar la conversación). */
 export function forceOption(
   story: Story,
   state: GameState,
@@ -163,74 +152,96 @@ export function forceOption(
     phase: 'reveal',
     winner: optionId,
     repeatReason: null,
+    forced: true,
     deadline: now + story.timers.revealSeconds * 1000,
   }
 }
 
+/** Añade hechos a la memoria sin duplicar y conservando el orden. */
+function addMemory(memory: string[], scene: Scene | undefined): string[] {
+  const incoming = (scene?.memoryAdd ?? []).map((fact) => fact.id)
+  const fresh = incoming.filter((id) => !memory.includes(id))
+  return fresh.length > 0 ? [...memory, ...fresh] : memory
+}
+
 /**
- * Aplica la decisión ganadora: carta, checkpoint, métricas y escena
- * siguiente. Es el único sitio donde la partida avanza.
+ * Aplica la decisión ganadora: memoria, bloqueo de desvíos, métricas, registro
+ * y escena siguiente. Es el único sitio donde la partida avanza.
  */
 export function applyOption(
   story: Story,
   state: GameState,
   scene: Scene,
   optionId: string,
-  now: number,
-  rand: () => number = Math.random
+  counts: Record<string, number>,
+  now: number
 ): GameState {
   const option = scene.options.find((candidate) => candidate.id === optionId)
-  if (!option) return state
+  if (!option || !option.next) return state
 
-  let drawn = state.drawn
-  let lastCard: string | null = null
-  let sceneId = option.next ?? scene.id
-  let saved = state.saved
+  const nextScene = story.scenes[option.next]
+  if (!nextScene) return state
 
-  const isInvestigation = Boolean(option.draw)
-  // Intervenir es actuar sin investigar; volver a un checkpoint no cuenta.
-  const isIntervention = !isInvestigation && !option.returnToCheckpoint
+  const isDetour = nextScene.type === 'detour'
+  const impulsive = option.actionType === 'actuar' || option.actionType === 'broma'
+  const investigative =
+    option.actionType === 'preguntar' || option.actionType === 'observar'
 
-  if (option.returnToCheckpoint) {
-    // Volver atrás con lo aprendido: las cartas reveladas no se pierden.
-    const point = saved ?? initialSnapshot(story)
-    sceneId = point.sceneId
-  } else if (option.draw) {
-    const card = drawCard(story, drawn, option.draw, rand)
-    if (card) {
-      drawn = [...drawn, card.id]
-      lastCard = card.id
-    }
+  const entry: DecisionLog = {
+    sceneId: scene.id,
+    optionId,
+    counts,
+    tie: state.repeatReason === 'tie' || state.tiedOptions !== null,
+    forced: state.forced,
+    at: now,
   }
 
-  const checkpoints = [
-    ...new Set([...state.checkpoints, ...checkpointsFor(story, drawn)]),
-  ]
-  const nextScene = story.scenes[sceneId]
-  if (nextScene?.checkpoint) checkpoints.push(nextScene.checkpoint)
-
-  // Guardar checkpoint: el punto seguro al que volver.
-  if (checkpoints.length > state.checkpoints.length && !nextScene?.detour) {
-    saved = { sceneId, drawn, checkpoints: [...new Set(checkpoints)] }
+  return {
+    ...state,
+    sceneId: option.next,
+    round: 0,
+    phase: 'voting',
+    winner: null,
+    paused: false,
+    tiedOptions: null,
+    repeatReason: null,
+    forced: false,
+    deadline: now + story.timers.voteSeconds * 1000,
+    memory: addMemory(state.memory, nextScene),
+    tried: isDetour && !state.tried.includes(option.next)
+      ? [...state.tried, option.next]
+      : state.tried,
+    detours: state.detours + (isDetour ? 1 : 0),
+    firstActionAt: state.firstActionAt ?? (impulsive ? now : null),
+    firstInvestigationAt: state.firstInvestigationAt ?? (investigative ? now : null),
+    solvedAt: state.solvedAt ?? (nextScene.type === 'ending' ? now : null),
+    route: [...state.route, { sceneId: option.next, at: now }],
+    log: [...state.log, entry],
   }
+}
 
+/** Salto directo del facilitador: entra a la escena sin contar métricas. */
+export function jumpToScene(
+  story: Story,
+  state: GameState,
+  sceneId: string,
+  now: number
+): GameState {
+  const scene = story.scenes[sceneId]
+  if (!scene) return state
   return {
     ...state,
     sceneId,
     round: 0,
     phase: 'voting',
     winner: null,
+    paused: false,
+    tiedOptions: null,
     repeatReason: null,
+    forced: false,
     deadline: now + story.timers.voteSeconds * 1000,
-    drawn,
-    lastCard,
-    checkpoints: [...new Set(checkpoints)],
-    saved,
-    // Métricas: sólo se registra la primera vez de cada cosa.
-    firstActionAt: state.firstActionAt ?? (isIntervention ? now : null),
-    firstInvestigationAt:
-      state.firstInvestigationAt ?? (isInvestigation ? now : null),
-    detours: state.detours + (nextScene?.detour ? 1 : 0),
-    solvedAt: state.solvedAt ?? (nextScene?.type === 'ending' ? now : null),
+    memory: addMemory(state.memory, scene),
+    solvedAt: state.solvedAt ?? (scene.type === 'ending' ? now : null),
+    route: [...state.route, { sceneId, at: now }],
   }
 }
