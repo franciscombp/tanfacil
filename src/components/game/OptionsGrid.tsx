@@ -1,4 +1,6 @@
+import { useCallback } from 'react'
 import type { Game } from '@/game/useGame'
+import { useKeyboardVote } from '@/game/useKeyboardVote'
 import {
   Questionnaire,
   QuestionnaireOption,
@@ -34,10 +36,22 @@ export function OptionsGrid({ game }: { game: Game }) {
     voteSeconds,
   } = game
 
-  if (!scene || scene.type === 'ending') return null
-
   const revealed = phase === 'reveal'
   const isAdmin = role === 'admin'
+  const canVote = Boolean(scene) && scene?.type !== 'ending' && phase === 'voting' && !isAdmin
+
+  /** Las letras impresas en cada opción también funcionan desde el teclado. */
+  const pickByIndex = useCallback(
+    (index: number) => {
+      const option = options[index]
+      if (!option || option.disabled || option.outOfRunoff) return
+      vote(option.id)
+    },
+    [options, vote]
+  )
+  useKeyboardVote(canVote, pickByIndex)
+
+  if (!scene || scene.type === 'ending') return null
 
   const pendingNames = pendingPlayers.map((player) => player.name)
   const pendingLabel =
@@ -71,16 +85,25 @@ export function OptionsGrid({ game }: { game: Game }) {
 
   return (
     <Questionnaire className="w-full gap-2">
-      <QuestionnaireQuestion description={description}>
-        ¿Qué hacemos?
-      </QuestionnaireQuestion>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <QuestionnaireQuestion description={description}>
+          ¿Qué hacemos?
+        </QuestionnaireQuestion>
+        {canVote && (
+          <p className="hidden text-xs text-muted-foreground lg:block">
+            Teclas <kbd className="rounded border px-1 font-mono">A</kbd>–
+            <kbd className="rounded border px-1 font-mono">D</kbd>
+          </p>
+        )}
+      </div>
 
-      {/* Dos columnas: cuatro opciones caben en dos filas legibles de lejos. */}
+      {/* Dos columnas siempre: en el móvil, cuatro opciones apiladas se comían
+          la pantalla entera y el relato quedaba fuera de alcance. */}
       <QuestionnaireOptions
         value={myVote ?? ''}
         onValueChange={vote}
         disabled={phase !== 'voting' || isAdmin}
-        className="gap-2.5 sm:grid-cols-2"
+        className="grid-cols-2 gap-2.5 sm:gap-3 lg:gap-4"
       >
         {options.map((option, index) => {
           const count = voteCounts[option.id] ?? 0
@@ -120,7 +143,7 @@ export function OptionsGrid({ game }: { game: Game }) {
               count={count}
               share={totalCount > 0 ? (count / totalCount) * 100 : 0}
               winner={revealed && winnerOptionId === option.id}
-              className="min-h-16 animate-fade-up"
+              className="min-h-[3.5rem] animate-fade-up p-3 sm:min-h-[4.5rem] sm:p-5"
               style={{ animationDelay: `${index * 70}ms`, animationFillMode: 'backwards' }}
             />
           )

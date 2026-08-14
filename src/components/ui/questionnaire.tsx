@@ -72,7 +72,7 @@ const QuestionnaireOption = React.forwardRef<
     <RadioGroupPrimitive.Item
       ref={ref}
       className={cn(
-        'group relative flex w-full items-center gap-3 overflow-hidden rounded-xl border-2 border-input bg-card p-4 text-left transition-all duration-150',
+        'group relative flex w-full items-center gap-2.5 overflow-hidden rounded-xl border-2 border-input bg-card p-4 text-left transition-all duration-150 sm:gap-3',
         'hover:-translate-y-0.5 hover:border-primary/60 hover:bg-accent hover:shadow-lg hover:shadow-primary/5',
         'active:translate-y-0 active:scale-[0.99]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -98,20 +98,20 @@ const QuestionnaireOption = React.forwardRef<
         <span
           aria-hidden
           className={cn(
-            'relative grid size-9 shrink-0 place-items-center rounded-lg border-2 border-input bg-secondary text-base font-bold text-secondary-foreground transition-colors',
+            'relative grid size-7 shrink-0 place-items-center rounded-lg border-2 border-input bg-secondary text-sm font-bold text-secondary-foreground transition-colors sm:size-9 sm:text-base',
             'group-hover:border-primary/60',
             'group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary group-data-[state=checked]:text-primary-foreground'
           )}
         >
           <span className="group-data-[state=checked]:hidden">{badge}</span>
           <Check
-            className="hidden size-5 animate-pop group-data-[state=checked]:block"
+            className="hidden size-4 animate-pop group-data-[state=checked]:block sm:size-5"
             strokeWidth={3}
           />
         </span>
       ) : null}
 
-      <span className="relative flex-1 text-[15px] font-medium leading-snug sm:text-base">
+      <span className="relative flex-1 text-[13px] font-medium leading-snug sm:text-base">
         {label}
       </span>
 

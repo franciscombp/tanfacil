@@ -79,7 +79,13 @@ export function GameView({
   const isEnding = scene.type === 'ending'
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
+    /*
+     * En móvil la página fluye y se desplaza: la imagen, el relato y la memoria
+     * no caben a la vez en un teléfono y encerrarlos en una altura fija dejaba
+     * el texto recortado y fuera de alcance. En pantalla grande —la que se
+     * proyecta— sí se fija a la ventana: todo en un solo golpe de vista.
+     */
+    <div className="flex min-h-[100dvh] flex-col bg-background text-foreground lg:fixed lg:inset-0 lg:min-h-0 lg:overflow-hidden">
       {/* CORTINILLA ENTRE ESCENAS */}
       {changing && (
         <div
@@ -106,7 +112,7 @@ export function GameView({
       )}
 
       {/* BARRA SUPERIOR, mínima */}
-      <header className="flex h-11 shrink-0 items-center gap-3 border-b px-4">
+      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-5 backdrop-blur sm:px-8 lg:static">
         {waiting ? (
           <Badge variant="outline" className="uppercase tracking-wide">
             Sala de espera
@@ -168,21 +174,21 @@ export function GameView({
       )}
 
       {waiting ? (
-        <main className="min-h-0 flex-1 overflow-y-auto">
+        <main className="flex-1 lg:min-h-0 lg:overflow-y-auto">
           <WaitingRoom game={game} />
         </main>
       ) : (
         <>
           {/* ESCENA: imagen a la izquierda, relato y memoria a la derecha */}
-          <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <main className="relative flex flex-1 flex-col lg:min-h-0 lg:overflow-hidden">
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--muted))_0%,hsl(var(--background))_65%)]"
             />
-            <div className="relative mx-auto grid min-h-0 w-full max-w-7xl flex-1 gap-4 overflow-y-auto px-4 py-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(20rem,1fr)] lg:overflow-hidden">
+            <div className="relative mx-auto grid w-full max-w-[100rem] flex-1 gap-5 px-5 py-5 sm:gap-6 sm:px-8 sm:py-6 lg:min-h-0 lg:grid-cols-[minmax(0,1.6fr)_minmax(21rem,1fr)] lg:gap-8 lg:overflow-hidden">
               <Stage scene={scene} />
 
-              <div className="flex min-h-0 flex-col gap-3">
+              <div className="flex flex-col gap-4 lg:min-h-0">
                 <SceneNarration scene={scene} />
                 {isEnding ? (
                   <SummaryPanel game={game} />
@@ -195,8 +201,8 @@ export function GameView({
 
           {/* ACCIONES: franja propia al pie, dos columnas */}
           {!isEnding && (
-            <footer className="shrink-0 border-t bg-card/40 px-4 py-3 backdrop-blur">
-              <div className="mx-auto w-full max-w-7xl space-y-2.5">
+            <footer className="sticky bottom-0 z-30 shrink-0 border-t bg-card/90 px-5 py-3.5 backdrop-blur sm:px-8 sm:py-5 lg:static lg:bg-card/40">
+              <div className="mx-auto w-full max-w-[100rem] space-y-3.5">
                 <OptionsGrid game={game} />
                 <VoteStatusBar game={game} />
               </div>

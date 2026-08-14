@@ -12,16 +12,16 @@ export function MemoryPanel({ game }: { game: Game }) {
 
   return (
     <aside className="flex min-h-0 w-full shrink-0 flex-col rounded-lg border bg-card/60">
-      <p className="flex items-center gap-1.5 border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="flex items-center gap-2 border-b px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         <NotebookPen className="size-3.5" /> Lo que sabemos
       </p>
 
       {memory.length === 0 ? (
-        <p className="px-3 py-3 text-xs text-muted-foreground">
+        <p className="px-4 py-4 text-sm text-muted-foreground">
           Todavía nada. Lo que el equipo descubra quedará anotado aquí.
         </p>
       ) : (
-        <ul className="max-h-44 space-y-1.5 overflow-y-auto px-3 py-2.5">
+        <ul className="max-h-48 space-y-2 overflow-y-auto px-4 py-3">
           {memory.map((fact, index) => (
             <li
               key={fact.id}
@@ -36,7 +36,7 @@ export function MemoryPanel({ game }: { game: Game }) {
       )}
 
       <p
-        className="mt-auto border-t px-3 py-1.5 text-right font-mono text-[11px] tabular-nums text-muted-foreground"
+        className="mt-auto border-t px-4 py-2 text-right font-mono text-xs tabular-nums text-muted-foreground"
         title="Tiempo real de la partida. Sólo informativo."
       >
         {formatDuration(metrics.elapsedSeconds)}

@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge'
  */
 export function SceneNarration({ scene }: { scene: Scene }) {
   return (
-    <div key={scene.id} className="flex min-h-0 animate-fade-up flex-col gap-2">
+    <div key={scene.id} className="flex animate-fade-up flex-col gap-3 lg:min-h-0">
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-lg font-semibold leading-tight tracking-tight sm:text-xl">
+        <h1 className="text-xl font-semibold leading-tight tracking-tight sm:text-2xl">
           {scene.title}
         </h1>
         {scene.type === 'detour' && (
@@ -29,7 +29,9 @@ export function SceneNarration({ scene }: { scene: Scene }) {
         )}
       </div>
 
-      <p className="min-h-0 flex-1 overflow-y-auto whitespace-pre-line text-pretty pr-1 text-[15px] leading-relaxed text-foreground/85 sm:text-base">
+      {/* Sólo scroll propio en pantalla grande: en móvil se desplaza la página
+          entera, y `flex-1` sobre altura cero dejaba el texto en 0 px. */}
+      <p className="whitespace-pre-line text-pretty pr-1 text-base leading-relaxed text-foreground/85 sm:text-lg sm:leading-relaxed lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
         {scene.text}
       </p>
     </div>
