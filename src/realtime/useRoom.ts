@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
-import supabase, { isSupabaseConfigured } from './supabase'
+import supabase, { isRealtimeEnabled } from './supabase'
 import type { GameState } from '@/engine/types'
 
 /**
@@ -96,7 +96,7 @@ interface UseRoomArgs {
 export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
   const [members, setMembers] = useState<RoomPresence[]>([])
   const [status, setStatus] = useState<RoomStatus>(
-    isSupabaseConfigured ? 'connecting' : 'offline'
+    isRealtimeEnabled ? 'connecting' : 'offline'
   )
   /** Sube en cada reintento y fuerza recrear el canal. */
   const [retry, setRetry] = useState(0)
@@ -141,7 +141,7 @@ export function useRoom({ channelName, pid, presence, onState }: UseRoomArgs) {
   }, [])
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return
+    if (!isRealtimeEnabled) return
 
     // Sólo se declara "sin conexión" si el corte dura de verdad y la pestaña
     // está a la vista: en segundo plano el navegador corta el socket aposta.

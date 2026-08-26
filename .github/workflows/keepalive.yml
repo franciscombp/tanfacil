@@ -3,9 +3,15 @@ name: Mantener Supabase despierto
 # Los proyectos gratuitos de Supabase se pausan tras días sin tráfico. Este
 # ping periódico cuenta como actividad y evita que la sala amanezca caída el
 # día de la charla. La anon key es pública por diseño (viaja en cada bundle).
+#
+# EN PAUSA desde que terminó la actividad: la sala en vivo está apagada (ver
+# `SALA_EN_VIVO` en src/realtime/supabase.ts) y no hay nada que mantener
+# despierto. Se deja el disparo manual por si hace falta un ping suelto.
+#
+# PARA REACTIVARLO junto con la sala, descomentar el bloque `schedule`.
 on:
-  schedule:
-    - cron: '17 */12 * * *'
+  # schedule:
+  #   - cron: '17 */12 * * *'
   workflow_dispatch:
 
 permissions: {}

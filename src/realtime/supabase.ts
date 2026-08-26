@@ -25,6 +25,29 @@ if (!isSupabaseConfigured) {
   )
 }
 
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  INTERRUPTOR DE LA SALA EN VIVO
+ *
+ *  Apagado: la actividad terminó y no hace falta mantener despierto el
+ *  proyecto de Supabase. El juego sigue completo, pero en partida
+ *  individual: nadie abre ningún socket y no se gasta nada.
+ *
+ *  PARA VOLVER A ENCENDERLO, una de estas dos:
+ *    · poner SALA_EN_VIVO a `true` aquí abajo, o
+ *    · construir con la variable de entorno VITE_REALTIME=on
+ *      (útil para probar sin tocar el código).
+ *
+ *  No hay nada más que revertir: el cliente, el canal, la presencia y todo
+ *  el motor de sincronización siguen intactos en el repositorio.
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+const SALA_EN_VIVO = false
+
+export const isRealtimeEnabled =
+  isSupabaseConfigured &&
+  (SALA_EN_VIVO || import.meta.env.VITE_REALTIME === 'on')
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,

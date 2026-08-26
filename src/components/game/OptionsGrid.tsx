@@ -7,6 +7,7 @@ import {
   QuestionnaireOptions,
   QuestionnaireQuestion,
 } from '@/components/ui/questionnaire'
+import { isRealtimeEnabled } from '@/realtime/supabase'
 
 /** Se vota «la B» en voz alta: cada opción lleva su letra. */
 const LETTERS = ['A', 'B', 'C', 'D']
@@ -74,14 +75,19 @@ export function OptionsGrid({ game }: { game: Game }) {
           ? talking
             ? 'El grupo conversa. El contador arranca con el primer voto.'
             : 'Votación en marcha. Tú facilitas.'
-          : myVote
-            ? pendingLabel ||
-              `Voto registrado. Se cierra en ${voteSecondsLeft ?? 0}s y puedes cambiarlo.`
-            : repeatReason === 'no_votes'
-              ? 'La votación se cerró sin votos: vuelvan a votar.'
-              : talking
-                ? `Conversen sin prisa. En cuanto alguien vote, empiezan ${voteSeconds} segundos para todos.`
-                : `Quedan ${voteSecondsLeft}s. Elijan una opción.`
+          : // Con la sala apagada no hay grupo al que esperar ni contador.
+            !isRealtimeEnabled
+            ? myVote
+              ? 'Elegido.'
+              : 'Elige una opción, sin prisa.'
+            : myVote
+              ? pendingLabel ||
+                `Voto registrado. Se cierra en ${voteSecondsLeft ?? 0}s y puedes cambiarlo.`
+              : repeatReason === 'no_votes'
+                ? 'La votación se cerró sin votos: vuelvan a votar.'
+                : talking
+                  ? `Conversen sin prisa. En cuanto alguien vote, empiezan ${voteSeconds} segundos para todos.`
+                  : `Quedan ${voteSecondsLeft}s. Elijan una opción.`
 
   return (
     <Questionnaire className="w-full">

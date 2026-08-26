@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Clock3, Crown, LogOut, Wifi, WifiOff } from 'lucide-react'
+import { Clock3, Crown, LogOut, User, Wifi, WifiOff } from 'lucide-react'
 
 import { useGame } from '@/game/useGame'
 import type { RoomRole } from '@/realtime/useRoom'
+import { isRealtimeEnabled } from '@/realtime/supabase'
 import { storyClock } from '@/engine/story'
 import { pauseUpdates } from '@/lib/useAppVersion'
 import { Badge } from '@/components/ui/badge'
@@ -141,14 +142,19 @@ export function GameView({
           <span
             className="flex items-center gap-1 text-rotulo text-muted-foreground"
             title={
-              status === 'connected'
-                ? 'Sincronizado con la sala'
-                : status === 'connecting'
-                  ? 'Reconectando…'
-                  : 'Sin conexión en vivo'
+              !isRealtimeEnabled
+                ? 'Partida individual: la sala en vivo está apagada'
+                : status === 'connected'
+                  ? 'Sincronizado con la sala'
+                  : status === 'connecting'
+                    ? 'Reconectando…'
+                    : 'Sin conexión en vivo'
             }
           >
-            {status === 'connected' ? (
+            {!isRealtimeEnabled ? (
+              // Apagada a propósito: se anuncia en gris, no en rojo de alarma.
+              <User className="size-3.5" />
+            ) : status === 'connected' ? (
               <Wifi className="size-3.5 text-emerald-500" />
             ) : (
               <WifiOff
@@ -160,19 +166,22 @@ export function GameView({
               />
             )}
           </span>
-          <Badge
-            variant={admin ? 'secondary' : 'outline'}
-            title={admin ? 'Hay facilitador conectado' : 'Sin facilitador conectado'}
-          >
-            <Crown />
-          </Badge>
+          {isRealtimeEnabled && (
+            <Badge
+              variant={admin ? 'secondary' : 'outline'}
+              title={admin ? 'Hay facilitador conectado' : 'Sin facilitador conectado'}
+            >
+              <Crown />
+            </Badge>
+          )}
           <Button variant="ghost" size="sm" onClick={onExit}>
             <LogOut />
           </Button>
         </div>
       </header>
 
-      {status === 'offline' && (
+      {/* Con la sala apagada no hay nada roto que avisar: es partida individual. */}
+      {status === 'offline' && isRealtimeEnabled && (
         <div className="shrink-0 border-b bg-destructive/10 px-hueco py-hueco-25 text-center text-rotulo normal-case tracking-normal text-destructive">
           Sin conexión en vivo: no verás a otros jugadores ni se sincronizará la partida.
         </div>

@@ -1,6 +1,7 @@
 import { Check, Crown, Hourglass, Play, Users } from 'lucide-react'
 import type { Game } from '@/game/useGame'
 import { Button } from '@/components/ui/button'
+import { isRealtimeEnabled } from '@/realtime/supabase'
 
 /**
  * Sala de espera. Sólo aparece si hay facilitador conectado: la partida no
@@ -29,9 +30,11 @@ export function WaitingRoom({ game }: { game: Game }) {
       <div className="relative w-full max-w-lg animate-fade-up rounded-xl border bg-card/70 p-5">
         <p className="flex items-center justify-center gap-2 text-sm font-medium">
           <Users className="size-4 text-muted-foreground" />
-          {players.length === 0
-            ? 'Nadie ha entrado todavía'
-            : `${players.length} ${players.length === 1 ? 'persona' : 'personas'} en la sala`}
+          {!isRealtimeEnabled
+            ? 'Sala en vivo apagada: juegas tú solo'
+            : players.length === 0
+              ? 'Nadie ha entrado todavía'
+              : `${players.length} ${players.length === 1 ? 'persona' : 'personas'} en la sala`}
         </p>
 
         {players.length > 0 && (
@@ -55,7 +58,9 @@ export function WaitingRoom({ game }: { game: Game }) {
                 <Play /> Comenzar la partida
               </Button>
               <p className="mt-2 text-xs text-muted-foreground">
-                Nadie puede votar hasta que la abras. El cronómetro empieza aquí.
+                {isRealtimeEnabled
+                  ? 'Nadie puede votar hasta que la abras. El cronómetro empieza aquí.'
+                  : 'El cronómetro empieza aquí.'}
               </p>
             </>
           ) : (
@@ -69,11 +74,13 @@ export function WaitingRoom({ game }: { game: Game }) {
 
       <p className="relative flex items-center gap-1.5 text-xs text-muted-foreground">
         <Crown className="size-3.5" />
-        {status === 'connected'
-          ? 'Conectado a la sala'
-          : status === 'connecting'
-            ? 'Conectando…'
-            : 'Sin conexión en vivo'}
+        {!isRealtimeEnabled
+          ? 'Partida individual'
+          : status === 'connected'
+            ? 'Conectado a la sala'
+            : status === 'connecting'
+              ? 'Conectando…'
+              : 'Sin conexión en vivo'}
       </p>
     </div>
   )
