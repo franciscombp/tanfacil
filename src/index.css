@@ -20,3 +20,15 @@ body,
   width: 100%;
   min-height: 100%;
 }
+
+/*
+ * Sin zoom por doble toque. Al tocar rápido el mismo botón (votar, siguiente),
+ * el navegador del teléfono lo leía como doble toque y acercaba la página, y
+ * no había forma clara de volver. `manipulation` quita ese zoom pero deja el
+ * zoom con dos dedos, que es accesibilidad: nada de `user-scalable=no` en el
+ * viewport. `:where()` tiene especificidad cero, así que cualquier elemento que
+ * pida `touch-action: none` (o la utilidad `touch-none`) se queda con lo suyo.
+ */
+:where(*) {
+  touch-action: manipulation;
+}
